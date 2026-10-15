@@ -50,9 +50,7 @@ let size x = (Size.of_float [@alert "-lossy"]) (Float.round_decimal x ~decimal_d
 
 let generate (c : Config.t) =
   let rand = Random.State.make [| c.seed |] in
-  let instrument =
-    Market_data.Instrument.create Market_data.Venue.Hyperliquid c.coin
-  in
+  let instrument = Market_data.Instrument.create Market_data.Venue.Hyperliquid c.coin in
   let start = Time_ns.to_int_ns_since_epoch c.start in
   let stop = start + Time_ns.Span.to_int_ns c.duration in
   let book_ns = Time_ns.Span.to_int_ns c.book_every in
@@ -71,7 +69,7 @@ let generate (c : Config.t) =
   while !now < stop do
     let t = !now in
     let step = c.step_bps /. 10_000. *. !mid in
-    (mid := !mid +. if Random.State.bool rand then step else -.step);
+    mid := !mid +. if Random.State.bool rand then step else -.step;
     let best_bid = Float.round_down !mid in
     let best_ask = best_bid +. 1. in
     let level i side =
@@ -106,9 +104,10 @@ let generate (c : Config.t) =
            ; trade_id = Int.to_string !tid
            })
     done;
-    if t / hour_ns <> (t + book_ns) / hour_ns
+    (* the rate at the start, then a new one at every hour *)
+    if t = start || t / hour_ns <> (t + book_ns) / hour_ns
     then (
-      let ts = (t + book_ns) / hour_ns * hour_ns in
+      let ts = if t = start then t else (t + book_ns) / hour_ns * hour_ns in
       Queue.enqueue
         events
         (Market_data.Event.Funding
@@ -136,24 +135,21 @@ let generate (c : Config.t) =
         let q = Float.abs delta in
         (* realized pnl of the part that reduces the position *)
         let closing =
-          if Float.(!pos *. delta < 0.)
-          then Float.min q (Float.abs !pos)
-          else 0.
+          if Float.(!pos *. delta < 0.) then Float.min q (Float.abs !pos) else 0.
         in
         let closed_pnl =
           closing *. (px -. !entry) *. if Float.(!pos > 0.) then 1. else -1.
         in
         let start_position = !pos in
         let new_pos = !pos +. delta in
-        (if Float.(Float.abs new_pos < 1e-9)
-         then entry := 0.
-         else if Float.(closing < q)
-         then
-           (* grew the position, or flipped: new entry from the opening part *)
-           if Float.(closing > 0.)
-           then entry := px
-           else
-             entry := ((Float.abs !pos *. !entry) +. (q *. px)) /. Float.abs new_pos);
+        if Float.(Float.abs new_pos < 1e-9)
+        then entry := 0.
+        else if Float.(closing < q)
+        then
+          (* grew the position, or flipped: new entry from the opening part *)
+          if Float.(closing > 0.)
+          then entry := px
+          else entry := ((Float.abs !pos *. !entry) +. (q *. px)) /. Float.abs new_pos;
         pos := Float.round_decimal new_pos ~decimal_digits:5;
         incr tid;
         Queue.enqueue
@@ -165,7 +161,9 @@ let generate (c : Config.t) =
           ; time = (t + 1) / 1_000_000
           ; start_position = size start_position
           ; dir = (if buy then "Buy" else "Sell")
-          ; closed_pnl = (Hl_protocol.Usd.of_float [@alert "-lossy"]) (Float.round_decimal closed_pnl ~decimal_digits:6)
+          ; closed_pnl =
+              (Hl_protocol.Usd.of_float [@alert "-lossy"])
+                (Float.round_decimal closed_pnl ~decimal_digits:6)
           ; hash = "0x"
           ; oid = Hl_protocol.Order_id.of_int !tid
           ; crossed = true
