@@ -1,0 +1,15 @@
+(executable
+ (name main)
+ (public_name copy-backtest)
+ (package copy-backtest)
+ (libraries
+  core
+  core_unix.command_unix
+  async
+  market-data
+  hl-protocol
+  hl-copy-core
+  execution-algos
+  copy-backtest)
+ (preprocess
+  (pps ppx_jane)))
