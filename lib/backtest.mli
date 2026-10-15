@@ -1,6 +1,6 @@
-(** The replay: a {!Source.t} through the copy mirror ({!Hl_copy_core.Mirror}) and the
-    execution algorithms ({!Execution_algos.Scheduler}), with child orders filled by one
-    {!Execution_algos.Paper} venue per coin against the replayed book.
+(** The replay: a {!Source.t} through the copy mirror ([Hl_copy_core.Mirror]) and the
+    execution algorithms ([Execution_algos.Scheduler]), with child orders filled by one
+    [Execution_algos.Paper] venue per coin against the replayed book.
 
     For each item in time order:
 

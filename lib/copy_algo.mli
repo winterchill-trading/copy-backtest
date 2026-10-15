@@ -1,4 +1,4 @@
-(** The follow's algorithm ({!Hl_copy_core.Exec_algo}) as the scheduler's
+(** The follow's algorithm ([Hl_copy_core.Exec_algo]) as the scheduler's
     [Execution_algos.Algo.t]: the same constructors and fields. *)
 
 open! Core

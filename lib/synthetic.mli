@@ -41,6 +41,6 @@ type t =
 val generate : Config.t -> t
 
 (** Writes the market as a recorder would
-    ([<dir>/hyperliquid/<coin>/norm/<stream>/<day>.bin], {!Market_data.Event_log}) and the
+    ([<dir>/hyperliquid/<coin>/norm/<stream>/<day>.bin], [Market_data.Event_log]) and the
     fills as [<dir>/leader-fills.ndjson]. *)
 val write : dir:string -> t -> unit Async.Deferred.t
