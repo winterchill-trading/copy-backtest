@@ -22,7 +22,7 @@ module Config = struct
   let default =
     { seed = 1
     ; coin = "BTC"
-    ; start = Time_ns.of_string_with_utc_offset "2026-10-16T00:00:00Z"
+    ; start = Time_ns.of_string_with_utc_offset "2026-10-16T00:30:00Z"
     ; duration = Time_ns.Span.hour
     ; start_px = 100_000.
     ; step_bps = 0.5
@@ -179,4 +179,13 @@ let generate (c : Config.t) =
     now := t + book_ns
   done;
   { events = Queue.to_list events; fills = Queue.to_list fills; leader }
+;;
+
+let write ~dir t =
+  let open Async in
+  let%bind () = Unix.mkdir ~p:() dir in
+  let w = Market_data.Event_log.Writer.create ~dir () in
+  List.iter t.events ~f:(Market_data.Event_log.Writer.append w);
+  let%bind () = Market_data.Event_log.Writer.close w in
+  Writer.save (dir ^/ "leader-fills.ndjson") ~contents:(Leader_fills.to_ndjson t.fills)
 ;;

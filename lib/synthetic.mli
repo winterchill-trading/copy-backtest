@@ -27,7 +27,7 @@ module Config : sig
     }
   [@@deriving sexp]
 
-  (** BTC at 100,000, one hour from 2026-10-16 00:00 UTC, books every 250 ms, 1 BTC per
+  (** BTC at 100,000, one hour from 2026-10-16 00:30 UTC (one funding hour), books every 250 ms, 1 BTC per
       level, the leader deciding every 30 s within 2 BTC, funding 0.00125% per hour. *)
   val default : t
 end
@@ -39,3 +39,7 @@ type t =
   }
 
 val generate : Config.t -> t
+
+(** Writes the market as a recorder would ([<dir>/hyperliquid/<coin>/norm/<stream>/<day>.bin],
+    {!Market_data.Event_log}) and the fills as [<dir>/leader-fills.ndjson]. *)
+val write : dir:string -> t -> unit Async.Deferred.t
