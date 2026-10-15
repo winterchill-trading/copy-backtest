@@ -1,7 +1,7 @@
 open! Core
 module Spec = Hl_copy_core.Rounding.Spec
 
-type t = Spec.t Map.M(Market_data.Symbol).t
+type t = Spec.t Map.M(Market_data.Symbol).t [@@deriving sexp_of]
 
 let default_sz_decimals = function
   | "BTC" -> 5

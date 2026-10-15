@@ -3,7 +3,7 @@
 
 open! Core
 
-type t = Hl_copy_core.Rounding.Spec.t Map.M(Market_data.Symbol).t
+type t = Hl_copy_core.Rounding.Spec.t Map.M(Market_data.Symbol).t [@@deriving sexp_of]
 
 (** Size decimals of Hyperliquid perpetuals used when no [meta] is given: BTC 5, ETH 4,
     SOL 2, anything else 2. *)
