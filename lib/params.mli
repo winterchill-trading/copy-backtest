@@ -38,5 +38,8 @@ val create
   -> unit
   -> t
 
+(** [equity], [mult:K] or [fixed:USD]. *)
+val mode_label : Hl_copy_core.Scale.Mode.t -> string
+
 (** A short label of the run's varying settings: algo, mode, leverage and notional caps. *)
 val label : t -> string
