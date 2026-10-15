@@ -1,0 +1,17 @@
+(library
+ (name copy_backtest)
+ (public_name copy-backtest)
+ (libraries
+  core
+  core_unix
+  async
+  yojson
+  fixed-decimal
+  exchange-core
+  parquet
+  market-data
+  hl-protocol
+  hl-copy-core
+  execution-algos)
+ (preprocess
+  (pps ppx_jane ppx_yojson_conv)))
