@@ -14,11 +14,11 @@ open! Async
 
 val write : dir:string -> Backtest.t list -> unit
 
-(** Reads the three files back with the DuckDB CLI and recomputes, per run, the number
-    of parents, the summed shortfall and fees of the parents, the end equity and the
-    maximum drawdown of the curve, then compares them with the summaries (relative
-    tolerance 1e-9). Returns one line per run; an error when [duckdb] is not on the
-    [PATH], a query fails or a value differs. *)
+(** Reads the three files back with the DuckDB CLI and recomputes, per run, the number of
+    parents, the summed shortfall and fees of the parents, the end equity and the maximum
+    drawdown of the curve, then compares them with the summaries (relative tolerance
+    1e-9). Returns one line per run; an error when [duckdb] is not on the [PATH], a query
+    fails or a value differs. *)
 val check_duckdb : dir:string -> Backtest.t list -> string list Or_error.t Deferred.t
 
 (** A fixed-width table of the summaries, one line per run. *)

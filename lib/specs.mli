@@ -1,5 +1,5 @@
-(** Lot and tick rules per coin for the mirror's rounding, from a saved Hyperliquid
-    [meta] response or a built-in table of size decimals. *)
+(** Lot and tick rules per coin for the mirror's rounding, from a saved Hyperliquid [meta]
+    response or a built-in table of size decimals. *)
 
 open! Core
 

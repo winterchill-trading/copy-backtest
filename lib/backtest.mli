@@ -7,20 +7,20 @@
     - a market event updates the coin's {!Market} and its paper venue (queue caps,
       crossing fills on a new book; queue and through fills on a trade), and the mark;
     - a leader fill moves the leader's position in its coin; both equities go to the
-      mirror, which plans the follower's orders exactly as the engine does (scaling,
-      caps, lot and tick rounding, minimum order). Each planned order is a parent worked
-      by the follow's algorithm from that moment; a parent below the minimum order goes
-      out as one IOC.
+      mirror, which plans the follower's orders exactly as the engine does (scaling, caps,
+      lot and tick rounding, minimum order). Each planned order is a parent worked by the
+      follow's algorithm from that moment; a parent below the minimum order goes out as
+      one IOC.
 
     Between items, on a fixed grid: market ticks for the parents ([tick]), equity samples
     ([sample]), funding at every UTC hour (position times mark times the coin's last
     hourly rate) and the daily-loss window at every UTC midnight.
 
     Fills pay [taker_fee_bps] or [maker_fee_bps]. Orders take [latency] to reach the
-    venue. The leader's equity is [leader_equity] plus its realized and unrealized pnl
-    on average-entry books of the replayed fills (a position held before the first fill
-    is opened at that fill's price). The market does not react to the follower's orders
-    (a fill takes from the replayed snapshot until the next one). *)
+    venue. The leader's equity is [leader_equity] plus its realized and unrealized pnl on
+    average-entry books of the replayed fills (a position held before the first fill is
+    opened at that fill's price). The market does not react to the follower's orders (a
+    fill takes from the replayed snapshot until the next one). *)
 
 open! Core
 

@@ -1,12 +1,11 @@
-(** A deterministic market and leader from a seed, so tests and demos need no
-    recordings.
+(** A deterministic market and leader from a seed, so tests and demos need no recordings.
 
     One coin. The mid follows a random walk on a 1-unit tick (a 0.5 bp step at 100,000),
     with an L2 snapshot every [book_every] (10 levels per side, random sizes) and trade
     prints at the touch between them; a funding event every hour. The leader changes its
     position every [decide_every] on average, toward a random target within
-    [max_position], taking liquidity at the touch: its fills carry the start position,
-    the realized pnl against its average entry and a 4.5 bp fee, like Hyperliquid's. *)
+    [max_position], taking liquidity at the touch: its fills carry the start position, the
+    realized pnl against its average entry and a 4.5 bp fee, like Hyperliquid's. *)
 
 open! Core
 
@@ -27,8 +26,9 @@ module Config : sig
     }
   [@@deriving sexp]
 
-  (** BTC at 100,000, one hour from 2026-10-16 00:30 UTC (one funding hour), books every 250 ms, 1 BTC per
-      level, the leader deciding every 30 s within 2 BTC, funding 0.00125% per hour. *)
+  (** BTC at 100,000, one hour from 2026-10-16 00:30 UTC (one funding hour), books every
+      250 ms, 1 BTC per level, the leader deciding every 30 s within 2 BTC, funding
+      0.00125% per hour. *)
   val default : t
 end
 
@@ -40,6 +40,7 @@ type t =
 
 val generate : Config.t -> t
 
-(** Writes the market as a recorder would ([<dir>/hyperliquid/<coin>/norm/<stream>/<day>.bin],
-    {!Market_data.Event_log}) and the fills as [<dir>/leader-fills.ndjson]. *)
+(** Writes the market as a recorder would
+    ([<dir>/hyperliquid/<coin>/norm/<stream>/<day>.bin], {!Market_data.Event_log}) and the
+    fills as [<dir>/leader-fills.ndjson]. *)
 val write : dir:string -> t -> unit Async.Deferred.t

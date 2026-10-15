@@ -21,8 +21,8 @@ type t =
   }
 [@@deriving sexp_of]
 
-(** Defaults: 10,000 USD follower, 1,000,000 USD leader, 200 ms copy delay, 50 ms
-    latency, 500 ms ticks, 10 s samples, 4.5 / 1.5 bp fees, funding on. *)
+(** Defaults: 10,000 USD follower, 1,000,000 USD leader, 200 ms copy delay, 50 ms latency,
+    500 ms ticks, 10 s samples, 4.5 / 1.5 bp fees, funding on. *)
 val create
   :  ?start_equity:float
   -> ?leader_equity:float

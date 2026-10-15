@@ -1,8 +1,8 @@
 (** What a backtest replays: market events and the leader's fills in one time order.
 
-    A leader fill is seen [copy_delay] after its exchange time (the time the engine
-    would learn it), and an event from the recording at its receive time, so the replay
-    sees what a live follower would have seen. Ties keep market events first. *)
+    A leader fill is seen [copy_delay] after its exchange time (the time the engine would
+    learn it), and an event from the recording at its receive time, so the replay sees
+    what a live follower would have seen. Ties keep market events first. *)
 
 open! Core
 
@@ -13,7 +13,8 @@ module Item : sig
   [@@deriving sexp_of]
 end
 
-type t = (int * Item.t) array (** nanoseconds since the epoch, sorted *)
+(** nanoseconds since the epoch, sorted *)
+type t = (int * Item.t) array
 
 val create
   :  ?copy_delay:Time_ns.Span.t

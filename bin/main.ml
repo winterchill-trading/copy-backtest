@@ -11,8 +11,12 @@ let default_leader = Address.of_string "0x00000000000000000000000000000000000000
 let data_flags =
   let open Command.Let_syntax in
   let%map_open leader_fills =
-    flag "-leader-fills" (optional string) ~doc:"FILE the leader's userFills (JSON or NDJSON)"
-  and norm = flag "-norm" (optional string) ~doc:"DIR recorder data directory (norm event logs)"
+    flag
+      "-leader-fills"
+      (optional string)
+      ~doc:"FILE the leader's userFills (JSON or NDJSON)"
+  and norm =
+    flag "-norm" (optional string) ~doc:"DIR recorder data directory (norm event logs)"
   and synthetic =
     flag "-synthetic" (optional int) ~doc:"SEED a synthetic market and leader instead"
   and synthetic_hours =
@@ -20,10 +24,17 @@ let data_flags =
   and from = flag "-from" (optional date) ~doc:"DATE first UTC day (default: first fill)"
   and to_ = flag "-to" (optional date) ~doc:"DATE last UTC day (default: last fill)"
   and coins =
-    flag "-coins" (optional (Arg_type.comma_separated string)) ~doc:"C,.. coins (default all)"
-  and meta = flag "-meta" (optional string) ~doc:"FILE saved meta response for size decimals"
+    flag
+      "-coins"
+      (optional (Arg_type.comma_separated string))
+      ~doc:"C,.. coins (default all)"
+  and meta =
+    flag "-meta" (optional string) ~doc:"FILE saved meta response for size decimals"
   and copy_delay_ms =
-    flag "-copy-delay-ms" (optional_with_default 200 int) ~doc:"MS leader fill to engine (200)"
+    flag
+      "-copy-delay-ms"
+      (optional_with_default 200 int)
+      ~doc:"MS leader fill to engine (200)"
   in
   let copy_delay = Time_ns.Span.of_int_ms copy_delay_ms in
   fun () ->
@@ -59,7 +70,11 @@ let data_flags =
       let to_ = Option.value to_ ~default:(day last) in
       let in_days =
         Leader_fills.select
-          ~from:(Time_ns.of_date_ofday ~zone:Time_float.Zone.utc from Time_ns.Ofday.start_of_day)
+          ~from:
+            (Time_ns.of_date_ofday
+               ~zone:Time_float.Zone.utc
+               from
+               Time_ns.Ofday.start_of_day)
           ~to_:
             (Time_ns.of_date_ofday
                ~zone:Time_float.Zone.utc
@@ -93,18 +108,25 @@ let params_flags =
     flag
       "-algo"
       (optional Execution_algos.Algo.arg_type)
-      ~doc:"ALGO immediate, twap[:D[:N]], vwap, pov[:R[:D]], passive[:T], iceberg, adaptive"
+      ~doc:
+        "ALGO immediate, twap[:D[:N]], vwap, pov[:R[:D]], passive[:T], iceberg, adaptive"
   and mode = flag "-mode" (optional string) ~doc:"MODE equity, mult:K or fixed:USD"
   and max_leverage = usd_flag "-max-leverage" ~doc:"X account leverage cap"
   and max_notional = usd_flag "-max-notional" ~doc:"USD notional cap per coin"
   and max_daily_loss = usd_flag "-max-daily-loss" ~doc:"USD daily loss cap"
   and slippage_bps = flag "-slippage-bps" (optional int) ~doc:"BPS IOC bound (20)"
-  and equity = flag "-equity" (optional_with_default 10_000. float) ~doc:"USD follower (10000)"
+  and equity =
+    flag "-equity" (optional_with_default 10_000. float) ~doc:"USD follower (10000)"
   and leader_equity =
-    flag "-leader-equity" (optional_with_default 1_000_000. float) ~doc:"USD leader at start"
-  and latency_ms = flag "-latency-ms" (optional_with_default 50 int) ~doc:"MS order latency"
+    flag
+      "-leader-equity"
+      (optional_with_default 1_000_000. float)
+      ~doc:"USD leader at start"
+  and latency_ms =
+    flag "-latency-ms" (optional_with_default 50 int) ~doc:"MS order latency"
   and tick_ms = flag "-tick-ms" (optional_with_default 500 int) ~doc:"MS algo ticks (500)"
-  and sample_s = flag "-sample-s" (optional_with_default 10 int) ~doc:"S curve spacing (10)"
+  and sample_s =
+    flag "-sample-s" (optional_with_default 10 int) ~doc:"S curve spacing (10)"
   and taker = flag "-taker-fee-bps" (optional_with_default 4.5 float) ~doc:"BPS (4.5)"
   and maker = flag "-maker-fee-bps" (optional_with_default 1.5 float) ~doc:"BPS (1.5)"
   and no_funding = flag "-no-funding" no_arg ~doc:" ignore funding" in
@@ -129,7 +151,9 @@ let params_flags =
       { base.caps with
         max_leverage = Option.first_some max_leverage base.caps.max_leverage
       ; max_notional_per_symbol =
-          Option.first_some (Option.map max_notional ~f:usd) base.caps.max_notional_per_symbol
+          Option.first_some
+            (Option.map max_notional ~f:usd)
+            base.caps.max_notional_per_symbol
       ; max_daily_loss =
           Option.first_some (Option.map max_daily_loss ~f:usd) base.caps.max_daily_loss
       }

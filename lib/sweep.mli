@@ -1,5 +1,5 @@
-(** Parameter sweeps: every combination of algorithms, scale modes and caps over the
-    same data. *)
+(** Parameter sweeps: every combination of algorithms, scale modes and caps over the same
+    data. *)
 
 open! Core
 open Hl_copy_core
@@ -13,9 +13,9 @@ module Grid : sig
     }
   [@@deriving sexp_of]
 
-  (** Parsers for comma-separated command-line lists: algos in
-      [Execution_algos.Algo]'s short form ([immediate,twap:30s:3,adaptive]), modes
-      [equity], [mult:K], [fixed:USD], caps a number or [none]. *)
+  (** Parsers for comma-separated command-line lists: algos in [Execution_algos.Algo]'s
+      short form ([immediate,twap:30s:3,adaptive]), modes [equity], [mult:K], [fixed:USD],
+      caps a number or [none]. *)
   val parse_algos : string -> Exec_algo.t list Or_error.t
 
   val parse_modes : string -> Scale.Mode.t list Or_error.t

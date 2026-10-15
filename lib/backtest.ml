@@ -97,10 +97,7 @@ type state =
 
 let usd x = (Usd.of_float [@alert "-lossy"]) x
 let hour_ns = Time_ns.Span.to_int_ns Time_ns.Span.hour
-
-let market t symbol =
-  Hashtbl.find_or_add t.markets symbol ~default:Market.create
-;;
+let market t symbol = Hashtbl.find_or_add t.markets symbol ~default:Market.create
 
 let paper t symbol =
   Hashtbl.find_or_add t.papers symbol ~default:(fun () ->
@@ -167,8 +164,10 @@ and step t (e : exec) ~now_ns event =
 and finish t (e : exec) =
   t.execs <- List.filter t.execs ~f:(fun x -> not (phys_equal x e));
   t.mirror <- Mirror.on_order_closed t.mirror e.order.cloid;
-  Option.iter (Scheduler.report ?end_px:(mark t e.order.symbol) e.sched) ~f:(fun report ->
-    Queue.enqueue t.parents { Parent.coin = Symbol.to_string e.order.symbol; report })
+  Option.iter
+    (Scheduler.report ?end_px:(mark t e.order.symbol) e.sched)
+    ~f:(fun report ->
+      Queue.enqueue t.parents { Parent.coin = Symbol.to_string e.order.symbol; report })
 
 (* Fills and closes from the coin's paper venue, until it is quiet (a close can release
    the final sweep, which may fill at once). *)
@@ -274,7 +273,8 @@ let sample t ~now_ns =
         let pos =
           Option.value (Map.find t.mirror.follower_positions symbol) ~default:Size.zero
         in
-        acc +. (Float.abs (Size.to_float target -. Size.to_float pos) *. Price.to_float mark)
+        acc
+        +. (Float.abs (Size.to_float target -. Size.to_float pos) *. Price.to_float mark)
       | _ -> acc)
   in
   Queue.enqueue
@@ -311,7 +311,9 @@ let tick t ~now_ns =
 ;;
 
 let new_day t ~now_ns =
-  let day = Time_ns.to_date (Time_ns.of_int_ns_since_epoch now_ns) ~zone:Time_float.Zone.utc in
+  let day =
+    Time_ns.to_date (Time_ns.of_int_ns_since_epoch now_ns) ~zone:Time_float.Zone.utc
+  in
   match t.day with
   | Some d when Date.equal d day -> ()
   | _ ->
@@ -419,8 +421,7 @@ let tracking_error curve =
     |> List.filter_map ~f:(fun ((a : Point.t), (b : Point.t)) ->
       if Float.(a.equity > 0. && a.leader_equity > 0.)
       then
-        Some
-          ((b.equity /. a.equity) -. 1. -. ((b.leader_equity /. a.leader_equity) -. 1.))
+        Some ((b.equity /. a.equity) -. 1. -. ((b.leader_equity /. a.leader_equity) -. 1.))
       else None)
   in
   match returns with

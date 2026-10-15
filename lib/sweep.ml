@@ -10,7 +10,11 @@ module Grid = struct
     }
   [@@deriving sexp_of]
 
-  let items s = String.split s ~on:',' |> List.map ~f:String.strip |> List.filter ~f:(Fn.non String.is_empty)
+  let items s =
+    String.split s ~on:','
+    |> List.map ~f:String.strip
+    |> List.filter ~f:(Fn.non String.is_empty)
+  ;;
 
   let parse_algos s =
     items s

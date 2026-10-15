@@ -33,9 +33,7 @@ let create ?(copy_delay = Time_ns.Span.zero) ~events ~fills () =
 ;;
 
 let load_norm ?(venue = Market_data.Venue.Hyperliquid) ~dir ~coins ~from ~to_ () =
-  let days =
-    List.init (Date.diff to_ from + 1) ~f:(fun i -> Date.add_days from i)
-  in
+  let days = List.init (Date.diff to_ from + 1) ~f:(fun i -> Date.add_days from i) in
   let%bind paths =
     Deferred.List.concat_map ~how:`Sequential coins ~f:(fun coin ->
       let instrument = Market_data.Instrument.create venue coin in

@@ -16,8 +16,8 @@ val load : string -> Hl_protocol.User_fill.t list Or_error.t
 (** One fill object per line. *)
 val to_ndjson : Hl_protocol.User_fill.t list -> string
 
-(** Fills of the coins in [coins] (all when empty) with [time] (epoch milliseconds) in
-    the half-open interval from [from] (inclusive) to [to_] (exclusive). *)
+(** Fills of the coins in [coins] (all when empty) with [time] (epoch milliseconds) in the
+    half-open interval from [from] (inclusive) to [to_] (exclusive). *)
 val select
   :  ?coins:string list
   -> ?from:Time_ns.t

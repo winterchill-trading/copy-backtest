@@ -57,7 +57,9 @@ let parents_schema =
       ; dictionary (utf8 "coin" (fun (_, (p : Backtest.Parent.t)) -> p.coin))
       ; dictionary (utf8 "algo" (r (fun x -> x.Cost_report.algo)))
       ; dictionary
-          (utf8 "side" (r (fun x -> if Market_data.Side.is_buy x.side then "buy" else "sell")))
+          (utf8
+             "side"
+             (r (fun x -> if Market_data.Side.is_buy x.side then "buy" else "sell")))
       ; float "target" (r (fun x -> Size.to_float x.target))
       ; float "filled" (r (fun x -> Size.to_float x.filled))
       ; float "avg_px" (r (fun x -> Price.to_float x.avg_px))
@@ -71,8 +73,7 @@ let parents_schema =
       ; float "arrival_slippage_bps" (r (fun x -> x.arrival_slippage_bps))
       ; float "shortfall" (r (fun x -> x.shortfall))
       ; float "shortfall_bps" (r (fun x -> x.shortfall_bps))
-      ; dictionary
-          (utf8 "outcome" (r (fun x -> Cost_report.Outcome.to_string x.outcome)))
+      ; dictionary (utf8 "outcome" (r (fun x -> Cost_report.Outcome.to_string x.outcome)))
       ]
 ;;
 
@@ -83,8 +84,7 @@ let write ~dir runs =
     ~schema:summary_schema
     ~compression:`Zstd
     (dir ^/ "summary.parquet")
-    ~f:(fun w ->
-      List.iter indexed ~f:(fun (i, r) -> Parquet.Writer.add w (i, r.summary)));
+    ~f:(fun w -> List.iter indexed ~f:(fun (i, r) -> Parquet.Writer.add w (i, r.summary)));
   Parquet.Writer.with_file
     ~schema:curve_schema
     ~compression:`Zstd
@@ -127,14 +127,10 @@ order by s.run
     dir
 ;;
 
-let close a b =
-  Float.(abs (a - b) <= 1e-9 * Float.max 1. (Float.max (abs a) (abs b)))
-;;
+let close a b = Float.(abs (a - b) <= 1e-9 * Float.max 1. (Float.max (abs a) (abs b)))
 
 let check_duckdb ~dir runs =
-  match%bind
-    Process.run ~prog:"duckdb" ~args:[ "-json"; "-c"; query dir ] ()
-  with
+  match%bind Process.run ~prog:"duckdb" ~args:[ "-json"; "-c"; query dir ] () with
   | Error err -> return (Error (Error.tag err ~tag:"duckdb"))
   | Ok out ->
     return
@@ -157,9 +153,7 @@ let check_duckdb ~dir runs =
          else
            List.zip_exn rows runs
            |> List.map ~f:(fun (row, (r : Backtest.t)) ->
-             let fees =
-               List.sum (module Float) r.parents ~f:(fun p -> p.report.fees)
-             in
+             let fees = List.sum (module Float) r.parents ~f:(fun p -> p.report.fees) in
              let checks =
                [ "parents", Float.of_int r.summary.parents, num row "parents"
                ; "shortfall", r.summary.shortfall, num row "shortfall"
@@ -214,7 +208,8 @@ let table runs =
     List.mapi runs ~f:(fun i (r : Backtest.t) ->
       let s = r.summary in
       sprintf
-        "%-3d %-34s %9.2f %7.3f%% %6.2f%% %8.2f %7.2f %8d %6d %6.1f%% %8.2f %8.2f %8.2f %8.1f"
+        "%-3d %-34s %9.2f %7.3f%% %6.2f%% %8.2f %7.2f %8d %6d %6.1f%% %8.2f %8.2f %8.2f \
+         %8.1f"
         i
         (String.prefix s.label 34)
         s.pnl
