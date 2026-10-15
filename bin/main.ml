@@ -277,9 +277,60 @@ let synthetic_command =
          out)
 ;;
 
+let time_arg = Command.Arg_type.create Time_ns.of_string_with_utc_offset
+
+let slice_command =
+  Command.async_or_error
+    ~summary:"Cut a time window of recorded event logs and leader fills (for fixtures)"
+    (let%map_open.Command norm = flag "-norm" (required string) ~doc:"DIR recorder data"
+     and leader_fills = flag "-leader-fills" (required string) ~doc:"FILE leader fills"
+     and coins =
+       flag "-coins" (required (Arg_type.comma_separated string)) ~doc:"C,.. coins"
+     and start = flag "-start" (required time_arg) ~doc:"TIME first receive time (ISO 8601 with zone)"
+     and stop = flag "-stop" (required time_arg) ~doc:"TIME end (excluded)"
+     and lead_in =
+       flag
+         "-lead-in-s"
+         (optional_with_default 0 int)
+         ~doc:"S also keep the leader's fills this long before [start]"
+     and out = flag "-out" (required string) ~doc:"DIR output directory" in
+     fun () ->
+       let open Deferred.Or_error.Let_syntax in
+       let day t = Time_ns.to_date t ~zone:Time_float.Zone.utc in
+       let%bind events =
+         Source.load_norm ~dir:norm ~coins ~from:(day start) ~to_:(day stop) ()
+       in
+       let events =
+         List.filter events ~f:(fun e ->
+           let t = Market_data.Event.recv_ts e in
+           Time_ns.(t >= start && t < stop))
+       in
+       let%bind fills = Deferred.return (Leader_fills.load leader_fills) in
+       let fills =
+         Leader_fills.select
+           ~coins
+           ~from:(Time_ns.sub start (Time_ns.Span.of_int_sec lead_in))
+           ~to_:stop
+           fills
+       in
+       let%bind () = Deferred.ok (Unix.mkdir ~p:() out) in
+       let w = Market_data.Event_log.Writer.create ~dir:out () in
+       List.iter events ~f:(Market_data.Event_log.Writer.append w);
+       let%bind () = Deferred.ok (Market_data.Event_log.Writer.close w) in
+       let%map () =
+         Deferred.ok
+           (Writer.save (out ^/ "leader-fills.ndjson") ~contents:(Leader_fills.to_ndjson fills))
+       in
+       printf "%d events, %d leader fills in %s\n" (List.length events) (List.length fills) out)
+;;
+
 let () =
   Command_unix.run
     (Command.group
        ~summary:"Copy-trading backtests on recorded or synthetic data"
-       [ "run", run_command; "sweep", sweep_command; "synthetic", synthetic_command ])
+       [ "run", run_command
+       ; "sweep", sweep_command
+       ; "synthetic", synthetic_command
+       ; "slice", slice_command
+       ])
 ;;
