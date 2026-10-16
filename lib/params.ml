@@ -53,6 +53,20 @@ let mode_label : Scale.Mode.t -> string = function
   | Fixed_notional n -> sprintf "fixed:%s" (Usd.to_string n)
 ;;
 
+(* [band:ra20] for the default shape with risk aversion 20; quadratic bands add the
+   impact, an [Impact] slippage an [i]. *)
+let band_label (b : No_trade_band.t) =
+  sprintf
+    "band:ra%g%s%s"
+    b.risk_aversion
+    (match b.cost_model with
+     | Proportional -> ""
+     | Quadratic { impact } -> sprintf ":q%g" impact)
+    (match b.slippage with
+     | Fixed_bps _ -> ""
+     | Impact _ -> ":i")
+;;
+
 let label t =
   let caps = t.follow.caps in
   String.concat
@@ -64,5 +78,6 @@ let label t =
        ; Option.map caps.max_notional_per_symbol ~f:(fun n ->
            sprintf "notional<=%s" (Usd.to_string n))
        ; Option.map caps.max_daily_loss ~f:(fun n -> sprintf "loss<=%s" (Usd.to_string n))
+       ; Option.map t.follow.band ~f:band_label
        ])
 ;;

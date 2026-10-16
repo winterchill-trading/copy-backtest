@@ -44,5 +44,9 @@ val create
 (** [equity], [mult:K] or [fixed:USD]. *)
 val mode_label : Hl_copy_core.Scale.Mode.t -> string
 
-(** A short label of the run's varying settings: algo, mode, leverage and notional caps. *)
+(** [band:ra<risk aversion>], with [:q<impact>] for quadratic costs and [:i] for slippage
+    estimated from the book. *)
+val band_label : No_trade_band.t -> string
+
+(** A short label of the run's varying settings: algo, mode, caps and band. *)
 val label : t -> string
