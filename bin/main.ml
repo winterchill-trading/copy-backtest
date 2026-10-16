@@ -221,7 +221,7 @@ let print_stats (stats : Stats.Row.t list) =
 
 (* Writes and checks the results, then fails when the gate rejected the decisive row (the
    run's, or the sweep pick's). *)
-let finish ~out ~no_duckdb ~gate ~(base : Params.t) runs =
+let finish ~out ~no_duckdb ~gate:(gate, oos) ~(base : Params.t) runs =
   let open Deferred.Or_error.Let_syntax in
   let%bind policy =
     Deferred.return
@@ -229,7 +229,7 @@ let finish ~out ~no_duckdb ~gate ~(base : Params.t) runs =
        | None -> Ok None
        | Some path -> Or_error.map (Backtest_stats.Gate.Policy.load path) ~f:Option.some)
   in
-  let stats = Stats.rows ?policy ~sample:base.sample runs in
+  let stats = Stats.rows ?policy ~out_of_sample_fraction:oos ~sample:base.sample runs in
   print_string (Output.table runs);
   print_stats stats;
   let%bind () =
@@ -269,8 +269,13 @@ let out_flags =
       "-gate"
       (optional string)
       ~doc:"POLICY.sexp backtest-stats acceptance policy; a rejection fails the command"
+  and oos =
+    flag
+      "-oos-fraction"
+      (optional_with_default 0. float)
+      ~doc:"F last share of each curve treated as out of sample in the stats (0)"
   in
-  out, no_duckdb, gate
+  out, no_duckdb, (gate, oos)
 ;;
 
 let run_command =

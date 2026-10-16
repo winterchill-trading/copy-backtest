@@ -76,7 +76,19 @@ let start_of (r : Backtest.t) =
   | [] -> Time_ns.epoch
 ;;
 
-let rows ?policy ?(bootstrap_samples = 1000) ?(seed = 0) ~sample runs =
+let rows
+  ?policy
+  ?(out_of_sample_fraction = 0.)
+  ?(bootstrap_samples = 1000)
+  ?(seed = 0)
+  ~sample
+  runs
+  =
+  let oos n =
+    let k = Float.iround_up_exn (out_of_sample_fraction *. Float.of_int n) in
+    (* a report needs three out-of-sample periods or none *)
+    if k >= 3 then Some k else None
+  in
   let periods_per_year = periods_per_year sample in
   let indexed =
     List.filter_mapi runs ~f:(fun i (r : Backtest.t) ->
@@ -102,6 +114,7 @@ let rows ?policy ?(bootstrap_samples = 1000) ?(seed = 0) ~sample runs =
       match
         Report.create
           ~name:r.summary.label
+          ?out_of_sample_periods:(oos (Array.length rs))
           ?trials
           ~bootstrap_samples
           ~seed
@@ -134,6 +147,7 @@ let rows ?policy ?(bootstrap_samples = 1000) ?(seed = 0) ~sample runs =
       match
         Report.create
           ~name:("sweep pick: " ^ r.summary.label)
+          ?out_of_sample_periods:(oos len)
           ~candidates
           ~benchmark
           ~bootstrap_samples
