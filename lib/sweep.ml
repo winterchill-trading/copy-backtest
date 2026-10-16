@@ -7,6 +7,7 @@ module Grid = struct
     ; modes : Scale.Mode.t list
     ; max_leverages : float option list
     ; max_notionals : Usd.t option list
+    ; bands : No_trade_band.t option list
     }
   [@@deriving sexp_of]
 
@@ -34,6 +35,61 @@ module Grid = struct
 
   let parse_modes s = items s |> List.map ~f:parse_mode |> Or_error.all
 
+  let parse_band s : No_trade_band.t option Or_error.t =
+    let d = No_trade_band.default in
+    let open Or_error.Let_syntax in
+    let%bind band =
+      Or_error.try_with (fun () ->
+        if String.is_prefix s ~prefix:"("
+        then Some (No_trade_band.t_of_sexp (Sexp.of_string s))
+        else (
+          match String.split s ~on:':' with
+          | [ "none" ] -> None
+          | [ "default" ] -> Some d
+          | [ "ra"; g ] -> Some { d with risk_aversion = Float.of_string g }
+          | [ "impact"; g ] ->
+            Some
+              { d with
+                risk_aversion = Float.of_string g
+              ; slippage = Impact { fallback_bps = 5. }
+              }
+          | [ "quad"; g; eta ] ->
+            Some
+              { d with
+                risk_aversion = Float.of_string g
+              ; cost_model = Quadratic { impact = Float.of_string eta }
+              }
+          | _ ->
+            raise_s
+              [%message
+                "unknown band (none, default, ra:G, impact:G, quad:G:ETA or a sexp)" s]))
+    in
+    let%map () =
+      Option.value_map band ~default:(Ok ()) ~f:No_trade_band.validate
+    in
+    band
+  ;;
+
+  (* A sexp band contains commas only inside parentheses; split at top-level commas. *)
+  let band_items s =
+    let depth = ref 0 in
+    let cur = Buffer.create 16 in
+    let out = ref [] in
+    String.iter s ~f:(fun c ->
+      match c with
+      | ',' when !depth = 0 ->
+        out := Buffer.contents cur :: !out;
+        Buffer.clear cur
+      | c ->
+        if Char.equal c '(' then incr depth;
+        if Char.equal c ')' then decr depth;
+        Buffer.add_char cur c);
+    out := Buffer.contents cur :: !out;
+    List.rev !out |> List.map ~f:String.strip |> List.filter ~f:(Fn.non String.is_empty)
+  ;;
+
+  let parse_bands s = band_items s |> List.map ~f:parse_band |> Or_error.all
+
   let parse_caps s =
     items s
     |> List.map ~f:(fun c ->
@@ -50,12 +106,14 @@ let params (g : Grid.t) ~(base : Params.t) =
   let* mode = g.modes in
   let* max_leverage = g.max_leverages in
   let* max_notional_per_symbol = g.max_notionals in
+  let* band = g.bands in
   [ { base with
       follow =
         { base.follow with
           algo
         ; mode
         ; caps = { base.follow.caps with max_leverage; max_notional_per_symbol }
+        ; band
         }
     }
   ]

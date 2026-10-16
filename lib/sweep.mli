@@ -10,6 +10,7 @@ module Grid : sig
     ; modes : Scale.Mode.t list
     ; max_leverages : float option list (** [None]: no leverage cap *)
     ; max_notionals : Usd.t option list (** per symbol; [None]: no cap *)
+    ; bands : No_trade_band.t option list (** [None]: no band *)
     }
   [@@deriving sexp_of]
 
@@ -20,6 +21,14 @@ module Grid : sig
 
   val parse_modes : string -> Scale.Mode.t list Or_error.t
   val parse_caps : string -> float option list Or_error.t
+
+  (** One band: [none], [default] ({!No_trade_band.default}), [ra:G] (the default with
+      risk aversion [G]), [impact:G] (and slippage estimated from the book, 5 bp until
+      one is known), [quad:G:ETA] (quadratic costs with impact [ETA]), or a sexp. *)
+  val parse_band : string -> No_trade_band.t option Or_error.t
+
+  (** Comma-separated {!parse_band}s (commas inside a sexp do not split). *)
+  val parse_bands : string -> No_trade_band.t option list Or_error.t
 end
 
 (** One run's parameters per combination, algos varying slowest. *)
