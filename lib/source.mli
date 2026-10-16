@@ -9,7 +9,9 @@ open! Core
 module Item : sig
   type t =
     | Market of Market_data.Event.t
-    | Leader of Hl_protocol.User_fill.t
+    | Leader of Hl_protocol.User_fill.t list
+    (** fills of one coin in one millisecond (one leader order sweeping several levels, as
+        one websocket message carries them), oldest first; never empty *)
   [@@deriving sexp_of]
 end
 

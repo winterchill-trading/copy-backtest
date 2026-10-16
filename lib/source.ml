@@ -4,7 +4,7 @@ open! Async
 module Item = struct
   type t =
     | Market of Market_data.Event.t
-    | Leader of Hl_protocol.User_fill.t
+    | Leader of Hl_protocol.User_fill.t list
   [@@deriving sexp_of]
 end
 
@@ -17,8 +17,11 @@ let create ?(copy_delay = Time_ns.Span.zero) ~events ~fills () =
       Time_ns.to_int_ns_since_epoch (Market_data.Event.recv_ts e), Item.Market e)
   in
   let leader =
-    List.map fills ~f:(fun (f : Hl_protocol.User_fill.t) ->
-      (f.time * 1_000_000) + delay, Item.Leader f)
+    List.group fills ~break:(fun (a : Hl_protocol.User_fill.t) b ->
+      a.time <> b.time || not (Hl_protocol.Coin.equal a.coin b.coin))
+    |> List.map ~f:(fun group ->
+      let first : Hl_protocol.User_fill.t = List.hd_exn group in
+      (first.time * 1_000_000) + delay, Item.Leader group)
   in
   let rank = function
     | Item.Market _ -> 0
