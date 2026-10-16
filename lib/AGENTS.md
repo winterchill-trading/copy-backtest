@@ -8,7 +8,10 @@ The `copy-backtest` library, module `Copy_backtest`.
 - `source.ml`, `market.ml`, `leader_fills.ml`, `synthetic.ml`: the inputs.
 - `params.ml`, `specs.ml`, `copy_algo.ml`, `sweep.ml`: the settings.
 - `output.ml`: Parquet files and the DuckDB check (the SQL recomputes parents, shortfall,
-  fees, end equity and drawdown).
+  fees, end equity and drawdown), `stats.parquet`, `reports.json`, `summary.md`.
+- `stats.ml`: backtest-stats reports per run and for a sweep's pick.
+- `attribution.ml`: costs per leg and the live-minus-backtest split; reads a `-out`
+  directory's Parquet files. `live_journal.ml`: the live leg from an engine journal.
 
 Rule: the replay must stay deterministic and must not reimplement mirror or scheduler
 logic; change those in their own repositories.
