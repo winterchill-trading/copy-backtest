@@ -3,17 +3,27 @@
     [<dir>/summary.parquet]: one row per run ({!Backtest.Summary.t} plus [run]).
     [<dir>/curve.parquet]: [run], [time], [equity], [leader_equity], [gap_bps].
     [<dir>/parents.parquet]: one row per finished parent: [run], [coin], [decision_px],
-    [algo], [side],
-    [target], [filled], [avg_px], [arrival_px], [end_px], [arrival], [end], [children],
-    [maker_filled], [fees], [arrival_slippage_bps], [shortfall], [shortfall_bps],
-    [outcome].
+    [algo], [side], [target], [filled], [avg_px], [arrival_px], [end_px], [arrival],
+    [end], [children], [maker_filled], [fees], [arrival_slippage_bps], [shortfall],
+    [shortfall_bps], [outcome].
 
     Runs are numbered from 0 in the order given. *)
 
 open! Core
 open! Async
 
-val write : dir:string -> Backtest.t list -> unit
+(** Writes the three files, then, with [stats], [<dir>/stats.parquet] (one row per
+    {!Stats.Row.t}: [scope] ([run] or [sweep]), [run], [label], [periods], [total_return],
+    [sharpe_annualized], [psr], [dsr], [trials], [pbo], [reality_check_p_value],
+    [spa_p_value] (the consistent one), [max_drawdown], [verdict], [reasons]) and
+    [<dir>/reports.json] (every report in full), and always [<dir>/summary.md]
+    ({!markdown}). *)
+val write : ?stats:Stats.Row.t list -> dir:string -> Backtest.t list -> unit
+
+(** A markdown table of the summaries with the band and the per-run PSR and DSR, and a
+    line on the sweep's pick (PSR, DSR, PBO, reality check and SPA p-values, the gate's
+    verdict). *)
+val markdown : ?stats:Stats.Row.t list -> Backtest.t list -> string
 
 (** Reads the three files back with the DuckDB CLI and recomputes, per run, the number of
     parents, the summed shortfall and fees of the parents, the end equity and the maximum

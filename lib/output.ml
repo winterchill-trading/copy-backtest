@@ -80,7 +80,107 @@ let parents_schema =
       ]
 ;;
 
-let write ~dir runs =
+let stats_schema =
+  let r f (row : Stats.Row.t) = f row.report in
+  let spa (x : Backtest_stats.Report.t) =
+    Option.map x.spa ~f:(fun s ->
+      s.Backtest_stats.Multiple_testing.Spa.p_value_consistent)
+  in
+  Parquet.Schema.create
+    Parquet.Schema.Column.
+      [ dictionary
+          (utf8 "scope" (fun (row : Stats.Row.t) ->
+             match row.scope with
+             | `Run -> "run"
+             | `Sweep -> "sweep"))
+      ; int32 "run" (fun (row : Stats.Row.t) -> row.run)
+      ; utf8 "label" (fun (row : Stats.Row.t) -> row.label)
+      ; int32 "periods" (r (fun x -> x.periods))
+      ; float "total_return" (r (fun x -> x.total_return))
+      ; float "sharpe_annualized" (r (fun x -> x.sharpe_annualized))
+      ; float "psr" (r (fun x -> x.psr))
+      ; optional float "dsr" (r (fun x -> x.dsr))
+      ; optional int32 "trials" (r (fun x -> Option.map x.trials ~f:(fun t -> t.count)))
+      ; optional float "pbo" (r (fun x -> x.pbo))
+      ; optional float "reality_check_p_value" (r (fun x -> x.reality_check_p_value))
+      ; optional float "spa_p_value" (r spa)
+      ; float "max_drawdown" (r (fun x -> x.drawdown.max_drawdown))
+      ; optional utf8 "verdict" Stats.Row.verdict
+      ; utf8 "reasons" (fun row -> String.concat ~sep:"; " (Stats.Row.reasons row))
+      ]
+;;
+
+let pct x = sprintf "%.2f%%" (x *. 100.)
+let opt f = Option.value_map ~default:"" ~f
+
+let markdown ?(stats = []) runs =
+  let stat_of i =
+    List.find stats ~f:(fun (row : Stats.Row.t) ->
+      Poly.equal row.scope `Run && row.run = i)
+  in
+  let header =
+    "| Run | Label | Return | Max drawdown | Fees | Parents | Fill rate | Shortfall \
+     (bps) | Tracking error (bps) | Mean gap (bps) | Band skips | Band saved | PSR | DSR \
+     |\n\
+     | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: \
+     | ---: | ---: |\n"
+  in
+  let rows =
+    List.mapi runs ~f:(fun i (r : Backtest.t) ->
+      let s = r.summary in
+      let st = stat_of i in
+      sprintf
+        "| %d | %s | %s | %s | %.2f | %d | %.1f%% | %.2f | %.2f | %.0f | %d | %.2f | %s \
+         | %s |\n"
+        i
+        s.label
+        (pct s.return_)
+        (pct s.max_drawdown)
+        s.fees
+        s.parents
+        (s.fill_rate *. 100.)
+        s.shortfall_bps
+        s.tracking_error_bps
+        s.mean_gap_bps
+        s.band_skips
+        s.band_saved
+        (opt (fun (x : Stats.Row.t) -> sprintf "%.3f" x.report.psr) st)
+        (opt (fun (x : Stats.Row.t) -> opt (sprintf "%.3f") x.report.dsr) st))
+  in
+  let sweep =
+    match List.find stats ~f:(fun (row : Stats.Row.t) -> Poly.equal row.scope `Sweep) with
+    | None -> ""
+    | Some row ->
+      let x = row.report in
+      sprintf
+        "\n\
+         Sweep pick: run %d (%s). PSR %.3f, DSR %s over %s trials, probability of \
+         backtest overfitting %s, reality check p %s, SPA p %s against the leader.%s\n"
+        row.run
+        row.label
+        x.psr
+        (opt (sprintf "%.3f") x.dsr)
+        (opt (fun (t : Backtest_stats.Report.Trials.t) -> Int.to_string t.count) x.trials)
+        (opt (sprintf "%.3f") x.pbo)
+        (opt (sprintf "%.3f") x.reality_check_p_value)
+        (opt
+           (fun (s : Backtest_stats.Multiple_testing.Spa.t) ->
+             sprintf "%.3f" s.p_value_consistent)
+           x.spa)
+        (match Stats.Row.verdict row with
+         | None -> ""
+         | Some v ->
+           sprintf
+             " Gate: %s%s."
+             v
+             (match Stats.Row.reasons row with
+              | [] -> ""
+              | rs -> " (" ^ String.concat ~sep:"; " rs ^ ")"))
+  in
+  header ^ String.concat rows ^ sweep
+;;
+
+let write ?(stats = []) ~dir runs =
   Core_unix.mkdir_p dir;
   let indexed = List.mapi runs ~f:(fun i (r : Backtest.t) -> i, r) in
   Parquet.Writer.with_file
@@ -101,7 +201,30 @@ let write ~dir runs =
     (dir ^/ "parents.parquet")
     ~f:(fun w ->
       List.iter indexed ~f:(fun (i, r) ->
-        List.iter r.parents ~f:(fun p -> Parquet.Writer.add w (i, p))))
+        List.iter r.parents ~f:(fun p -> Parquet.Writer.add w (i, p))));
+  if not (List.is_empty stats)
+  then (
+    Parquet.Writer.with_file
+      ~schema:stats_schema
+      ~compression:`Zstd
+      (dir ^/ "stats.parquet")
+      ~f:(fun w -> List.iter stats ~f:(Parquet.Writer.add w));
+    Out_channel.write_all
+      (dir ^/ "reports.json")
+      ~data:
+        (Yojson.Safe.pretty_to_string
+           (`List
+             (List.map stats ~f:(fun (row : Stats.Row.t) ->
+                `Assoc
+                  [ ( "scope"
+                    , `String
+                        (match row.scope with
+                         | `Run -> "run"
+                         | `Sweep -> "sweep") )
+                  ; "run", `Int row.run
+                  ; "report", Backtest_stats.Report.to_json row.report
+                  ])))));
+  Out_channel.write_all (dir ^/ "summary.md") ~data:(markdown ~stats runs)
 ;;
 
 (* Per run, recomputed from the parents and the curve. The drawdown is the largest fall
