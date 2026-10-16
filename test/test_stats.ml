@@ -65,7 +65,8 @@ let%expect_test "a report per run and one for the sweep's pick" =
       r.summary.band_saved
       r.summary.fees
       r.summary.mean_gap_bps);
-  [%expect {|
+  [%expect
+    {|
     immediate equity                 band skips 0 saved 0.00 fees 328.10 gap 3 bps
     immediate equity band:ra20       band skips 35 saved 16.90 fees 309.55 gap 519 bps
     passive:5s equity                band skips 0 saved 0.00 fees 151.18 gap 583 bps
@@ -73,7 +74,8 @@ let%expect_test "a report per run and one for the sweep's pick" =
     |}];
   let rows = Stats.rows ~sample:base.sample runs in
   show rows;
-  [%expect {|
+  [%expect
+    {|
     run   0 immediate equity                 periods 181 psr 0.000 dsr 0.000 pbo - spa - verdict -
     run   1 immediate equity band:ra20       periods 181 psr 0.000 dsr 0.000 pbo - spa - verdict -
     run   2 passive:5s equity                periods 181 psr 0.000 dsr 0.000 pbo - spa - verdict -
@@ -92,7 +94,8 @@ let%expect_test "the gate rejects the sweep's pick, a permissive policy accepts 
   (match Stats.rejected rows with
    | None -> print_endline "accepted"
    | Some row -> print_s [%sexp (Stats.Row.reasons row : string list)]);
-  [%expect {|
+  [%expect
+    {|
     ("181 periods, at least 250 required"
      "probabilistic Sharpe ratio 0.000 below 0.950"
      "out-of-sample probabilistic Sharpe ratio 0.000 below 0.900"
@@ -106,7 +109,8 @@ let%expect_test "the gate rejects the sweep's pick, a permissive policy accepts 
   (* one run alone: its own verdict *)
   let one = Stats.rows ~policy:strict ~sample:base.sample [ List.hd_exn runs ] in
   show one;
-  [%expect {| run   0 immediate equity                 periods 181 psr 0.000 dsr - pbo - spa - verdict reject |}];
+  [%expect
+    {| run   0 immediate equity                 periods 181 psr 0.000 dsr - pbo - spa - verdict reject |}];
   return ()
 ;;
 
@@ -136,6 +140,7 @@ let%expect_test "stats are written next to the results and DuckDB reads them" =
     |}];
   let md = In_channel.read_all (dir ^/ "summary.md") in
   print_endline (List.hd_exn (String.split_lines md));
-  [%expect {| | Run | Label | Return | Max drawdown | Fees | Parents | Fill rate | Shortfall (bps) | Tracking error (bps) | Mean gap (bps) | Band skips | Band saved | PSR | DSR | |}];
+  [%expect
+    {| | Run | Label | Return | Max drawdown | Fees | Parents | Fill rate | Shortfall (bps) | Tracking error (bps) | Mean gap (bps) | Band skips | Band saved | PSR | DSR | |}];
   return ()
 ;;

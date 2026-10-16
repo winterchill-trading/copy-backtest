@@ -432,7 +432,8 @@ let attribute_command =
        explain.")
     (let%map_open.Command backtest =
        flag "-backtest" (required string) ~doc:"DIR a backtest's -out directory"
-     and run = flag "-run" (optional_with_default 0 int) ~doc:"N run in that directory (0)"
+     and run =
+       flag "-run" (optional_with_default 0 int) ~doc:"N run in that directory (0)"
      and journal =
        flag
          "-journal"

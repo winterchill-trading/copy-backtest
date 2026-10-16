@@ -2,11 +2,11 @@
     something other than its backtest over the same leader and window.
 
     Each side is a {!Leg.t}: start and end equity, the parents it executed (each with the
-    price the follower decided at, the leader's fill price, and its cost report) and
-    the funding it paid. With [s = +1] for a buy and [-1] for a sell, [d] the decision
-    price, [a] the arrival price, [p] the average fill, [e] the price when the parent
-    ended, [q] the filled size, [u] the unfilled size and [T = q + u] the target, a leg's
-    costs in USD are
+    price the follower decided at, the leader's fill price, and its cost report) and the
+    funding it paid. With [s = +1] for a buy and [-1] for a sell, [d] the decision price,
+    [a] the arrival price, [p] the average fill, [e] the price when the parent ended, [q]
+    the filled size, [u] the unfilled size and [T = q + u] the target, a leg's costs in
+    USD are
 
     - fees: the parents' fees;
     - slippage: [s q (p - a)], fills against the arrival price;

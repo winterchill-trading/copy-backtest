@@ -8,18 +8,12 @@ let load_file path =
   match%bind Market_data.Framed.read_digest path with
   | Some d when String.equal d Journal.digest_v1 ->
     let%map entries, _ =
-      Market_data.Framed.load_file
-        ~digest:d
-        Journal.Entry.Stable.V1.bin_reader_t
-        path
+      Market_data.Framed.load_file ~digest:d Journal.Entry.Stable.V1.bin_reader_t path
     in
     List.map entries ~f:Journal.Entry.Stable.V3.of_v1
   | Some d when String.equal d Journal.digest_v2 ->
     let%map entries, _ =
-      Market_data.Framed.load_file
-        ~digest:d
-        Journal.Entry.Stable.V2.bin_reader_t
-        path
+      Market_data.Framed.load_file ~digest:d Journal.Entry.Stable.V2.bin_reader_t path
     in
     List.map entries ~f:Journal.Entry.Stable.V3.of_v2
   | _ ->

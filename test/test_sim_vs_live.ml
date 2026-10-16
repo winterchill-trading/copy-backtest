@@ -47,11 +47,14 @@ let%expect_test "the live run against its backtest" =
     r.summary.parents
     r.summary.fees
     (r.summary.return_ *. 100.);
-  [%expect {| 5602 events, 638 leader fills; backtest: 21 parents, fees 29.79, return 0.0153% |}];
+  [%expect
+    {| 5602 events, 638 leader fills; backtest: 21 parents, fees 29.79, return 0.0153% |}];
   let out = Filename_unix.temp_dir "copy-backtest-attribution" "" in
   Output.write ~dir:out [ r ];
   let backtest = ok_exn (Attribution.backtest_leg out) in
-  let%bind entries = Live_journal.load (dir ^/ "journal/2026-10-16.v3.journal") >>| ok_exn in
+  let%bind entries =
+    Live_journal.load (dir ^/ "journal/2026-10-16.v3.journal") >>| ok_exn
+  in
   let live = ok_exn (Live_journal.leg entries) in
   printf
     "journal: %d entries; live: %d parents, equity %.2f -> %.2f\n"
@@ -62,7 +65,8 @@ let%expect_test "the live run against its backtest" =
   [%expect {| journal: 152 entries; live: 24 parents, equity 1000000.00 -> 1000034.58 |}];
   let t = Attribution.compute ~backtest ~live in
   print_string (Attribution.to_string_hum t);
-  [%expect {|
+  [%expect
+    {|
     term           backtest USD     live USD        bps
     fees                  29.79        29.67       0.00
     slippage              19.43        10.70       0.09
@@ -73,9 +77,7 @@ let%expect_test "the live run against its backtest" =
     return: backtest 0.0153%, live 0.0035%, difference -1.18 bps; parents: backtest 21, live 24
     |}];
   (* the terms and the residual add up to the difference *)
-  let sum =
-    List.sum (module Float) t.terms ~f:(fun x -> x.bps) +. t.residual_bps
-  in
+  let sum = List.sum (module Float) t.terms ~f:(fun x -> x.bps) +. t.residual_bps in
   printf "%b\n" Float.(abs (sum -. t.difference_bps) < 1e-9);
   [%expect {| true |}];
   (* a directory reads the same as its one file *)

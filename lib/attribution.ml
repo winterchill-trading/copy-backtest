@@ -136,7 +136,12 @@ let compute ~(backtest : Leg.t) ~(live : Leg.t) =
 
 let to_string_hum t =
   let line name ~bt ~live ~bps =
-    sprintf "%-14s %12s %12s %10.2f%s\n" name bt live bps
+    sprintf
+      "%-14s %12s %12s %10.2f%s\n"
+      name
+      bt
+      live
+      bps
       (if String.equal name t.dominant then "  <- largest" else "")
   in
   let usd = sprintf "%.2f" in
@@ -160,8 +165,9 @@ let to_string_hum t =
 
 let column_index reader name =
   match
-    List.findi (Parquet.Reader.columns reader) ~f:(fun _ (c : Parquet.Metadata.Schema_element.t) ->
-      String.equal c.name name)
+    List.findi
+      (Parquet.Reader.columns reader)
+      ~f:(fun _ (c : Parquet.Metadata.Schema_element.t) -> String.equal c.name name)
   with
   | Some (i, _) -> Ok i
   | None -> Or_error.error_s [%message "missing column" name]
@@ -212,13 +218,10 @@ let backtest_leg ?(run = 0) dir =
     | None -> Or_error.error_s [%message "no such run" (run : int)]
   in
   let%bind curve =
-    rows
-      (dir ^/ "curve.parquet")
-      ~columns:[ "run"; "time" ]
-      ~f:(fun v ->
-        let%map r = int v.(0)
-        and t = int v.(1) in
-        r, t)
+    rows (dir ^/ "curve.parquet") ~columns:[ "run"; "time" ] ~f:(fun v ->
+      let%map r = int v.(0)
+      and t = int v.(1) in
+      r, t)
   in
   let times = List.filter_map curve ~f:(fun (r, t) -> Option.some_if (r = run) t) in
   let%map parents =
