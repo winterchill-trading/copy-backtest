@@ -98,7 +98,7 @@ let compute ~(backtest : Leg.t) ~(live : Leg.t) =
     { Term.name
     ; backtest_usd
     ; live_usd
-    ; bps = -.(per live live_usd -. per backtest backtest_usd) *. 10_000.
+    ; bps = (per backtest backtest_usd -. per live live_usd) *. 10_000.
     }
   in
   let terms =
