@@ -14,6 +14,7 @@ jobs:
             fixed-decimal https://github.com/winterchill-trading/fixed-decimal.git
             exchange-core https://github.com/winterchill-trading/exchange-core.git
             parquet https://github.com/winterchill-trading/parquet.git
+            backtest-stats https://github.com/winterchill-trading/backtest-stats.git
             market-data https://github.com/winterchill-trading/market-data.git
             hl-protocol https://github.com/winterchill-trading/hl-protocol.git
             hl-copy-core https://github.com/winterchill-trading/hl-copy-core.git

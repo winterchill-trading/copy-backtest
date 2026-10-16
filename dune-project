@@ -37,4 +37,5 @@
   market-data
   hl-protocol
   hl-copy-core
-  execution-algos))
+  execution-algos
+  backtest-stats))

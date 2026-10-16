@@ -26,6 +26,7 @@ depends: [
   "hl-protocol"
   "hl-copy-core"
   "execution-algos"
+  "backtest-stats"
   "odoc" {with-doc}
 ]
 build: [
