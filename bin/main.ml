@@ -196,26 +196,81 @@ let params_flags =
       ()
 ;;
 
-let finish ~out ~no_duckdb runs =
+let print_stats (stats : Stats.Row.t list) =
+  List.iter stats ~f:(fun row ->
+    let x = row.report in
+    let opt = Option.value_map ~default:"-" ~f:(sprintf "%.3f") in
+    printf
+      "stats %s %d: periods %d, sharpe %.2f, psr %.3f, dsr %s, pbo %s, spa p %s%s\n"
+      (match row.scope with
+       | `Run -> "run"
+       | `Sweep -> "sweep pick")
+      row.run
+      x.periods
+      x.sharpe_annualized
+      x.psr
+      (opt x.dsr)
+      (opt x.pbo)
+      (opt
+         (Option.map x.spa ~f:(fun s ->
+            s.Backtest_stats.Multiple_testing.Spa.p_value_consistent)))
+      (match Stats.Row.verdict row with
+       | None -> ""
+       | Some v -> ", gate " ^ v))
+;;
+
+(* Writes and checks the results, then fails when the gate rejected the decisive row (the
+   run's, or the sweep pick's). *)
+let finish ~out ~no_duckdb ~gate ~(base : Params.t) runs =
+  let open Deferred.Or_error.Let_syntax in
+  let%bind policy =
+    Deferred.return
+      (match gate with
+       | None -> Ok None
+       | Some path -> Or_error.map (Backtest_stats.Gate.Policy.load path) ~f:Option.some)
+  in
+  let stats = Stats.rows ?policy ~sample:base.sample runs in
   print_string (Output.table runs);
-  match out with
+  print_stats stats;
+  let%bind () =
+    match out with
+    | None -> return ()
+    | Some dir ->
+      Output.write ~stats ~dir runs;
+      printf
+        "wrote %s/{summary,curve,parents,stats}.parquet, reports.json, summary.md\n"
+        dir;
+      if no_duckdb
+      then return ()
+      else (
+        match%map.Deferred Output.check_duckdb ~dir runs with
+        | Ok lines ->
+          Ok (List.iter lines ~f:(fun l -> print_endline ("duckdb check: " ^ l)))
+        | Error err ->
+          Ok (Print.eprint_s [%message "duckdb check failed" (err : Error.t)]))
+  in
+  match Stats.rejected stats with
   | None -> return ()
-  | Some dir ->
-    Output.write ~dir runs;
-    printf "wrote %s/{summary,curve,parents}.parquet\n" dir;
-    if no_duckdb
-    then return ()
-    else (
-      match%map Output.check_duckdb ~dir runs with
-      | Ok lines -> List.iter lines ~f:(fun l -> print_endline ("duckdb check: " ^ l))
-      | Error err -> Print.eprint_s [%message "duckdb check failed" (err : Error.t)])
+  | Some row ->
+    Deferred.Or_error.error_s
+      [%message
+        "rejected by the gate"
+          ~run:(row.run : int)
+          ~label:row.label
+          ~reasons:(Stats.Row.reasons row : string list)]
 ;;
 
 let out_flags =
   let open Command.Let_syntax in
   let%map_open out = flag "-out" (optional string) ~doc:"DIR write Parquet results here"
-  and no_duckdb = flag "-no-duckdb" no_arg ~doc:" skip the DuckDB check of -out" in
-  out, no_duckdb
+  and no_duckdb = flag "-no-duckdb" no_arg ~doc:" skip the DuckDB check of -out"
+  and gate =
+    flag
+      "-gate"
+      (optional string)
+      ~doc:"POLICY.sexp backtest-stats acceptance policy; a rejection fails the command"
+  in
+  out, no_duckdb, gate
 ;;
 
 let run_command =
@@ -223,13 +278,13 @@ let run_command =
     ~summary:"Backtest one follow configuration"
     (let%map_open.Command data = data_flags
      and params = params_flags
-     and out, no_duckdb = out_flags in
+     and out, no_duckdb, gate = out_flags in
      fun () ->
        let open Deferred.Or_error.Let_syntax in
        let%bind source, specs, leader = data () in
        let%bind p = Deferred.return (params ~leader ~specs) in
        let r = Backtest.run p source in
-       Deferred.ok (finish ~out ~no_duckdb [ r ]))
+       finish ~out ~no_duckdb ~gate ~base:p [ r ])
 ;;
 
 let sweep_command =
@@ -237,7 +292,7 @@ let sweep_command =
     ~summary:"Backtest every combination of algos, modes and caps"
     (let%map_open.Command data = data_flags
      and params = params_flags
-     and out, no_duckdb = out_flags
+     and out, no_duckdb, gate = out_flags
      and algos =
        flag
          "-algos"
@@ -278,7 +333,7 @@ let sweep_command =
             ; bands
             })
        in
-       Deferred.ok (finish ~out ~no_duckdb (Sweep.run grid ~base source)))
+       finish ~out ~no_duckdb ~gate ~base (Sweep.run grid ~base source))
 ;;
 
 let synthetic_command =

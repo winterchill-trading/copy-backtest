@@ -10,6 +10,7 @@
   hl-protocol
   hl-copy-core
   execution-algos
+  backtest-stats
   copy-backtest)
  (preprocess
   (pps ppx_jane)))
