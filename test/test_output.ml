@@ -98,7 +98,8 @@ let%expect_test "band arguments" =
          "none,default,ra:200,impact:20,quad:20:0.01,((fee_bps 1) (slippage (Fixed_bps \
           0)) (risk_aversion 5) (vol_bps 100) (cost_model Proportional))"
        : No_trade_band.t option list Or_error.t)];
-  [%expect {|
+  [%expect
+    {|
     (Ok
      (()
       (((fee_bps 4.5) (slippage (Fixed_bps 5)) (risk_aversion 20) (vol_bps 300)
@@ -113,6 +114,7 @@ let%expect_test "band arguments" =
         (cost_model Proportional)))))
     |}];
   print_s [%sexp (Sweep.Grid.parse_band "ra:-1" : No_trade_band.t option Or_error.t)];
-  [%expect {| (Error ("invalid no-trade band" (errors ("risk_aversion not positive")))) |}];
+  [%expect
+    {| (Error ("invalid no-trade band" (errors ("risk_aversion not positive")))) |}];
   return ()
 ;;
