@@ -27,6 +27,7 @@ let%expect_test "parquet results agree with DuckDB" =
     ; modes = ok_exn (Sweep.Grid.parse_modes "equity")
     ; max_leverages = [ None ]
     ; max_notionals = [ None ]
+    ; bands = [ None ]
     }
   in
   let runs = Sweep.run grid ~base source in
@@ -56,6 +57,7 @@ let%expect_test "sweep grid" =
     ; modes = ok_exn (Sweep.Grid.parse_modes "equity,mult:0.5")
     ; max_leverages = ok_exn (Sweep.Grid.parse_caps "none,3")
     ; max_notionals = [ None ]
+    ; bands = [ None ]
     }
   in
   let base =
@@ -86,5 +88,31 @@ let%expect_test "sweep grid" =
     adaptive:20s mult:0.5 lev<=3
     (Error ("unknown mode (equity, mult:K, fixed:USD)" bogus))
     |}];
+  return ()
+;;
+
+let%expect_test "band arguments" =
+  print_s
+    [%sexp
+      (Sweep.Grid.parse_bands
+         "none,default,ra:200,impact:20,quad:20:0.01,((fee_bps 1) (slippage (Fixed_bps \
+          0)) (risk_aversion 5) (vol_bps 100) (cost_model Proportional))"
+       : No_trade_band.t option list Or_error.t)];
+  [%expect {|
+    (Ok
+     (()
+      (((fee_bps 4.5) (slippage (Fixed_bps 5)) (risk_aversion 20) (vol_bps 300)
+        (cost_model Proportional)))
+      (((fee_bps 4.5) (slippage (Fixed_bps 5)) (risk_aversion 200) (vol_bps 300)
+        (cost_model Proportional)))
+      (((fee_bps 4.5) (slippage (Impact (fallback_bps 5))) (risk_aversion 20)
+        (vol_bps 300) (cost_model Proportional)))
+      (((fee_bps 4.5) (slippage (Fixed_bps 5)) (risk_aversion 20) (vol_bps 300)
+        (cost_model (Quadratic (impact 0.01)))))
+      (((fee_bps 1) (slippage (Fixed_bps 0)) (risk_aversion 5) (vol_bps 100)
+        (cost_model Proportional)))))
+    |}];
+  print_s [%sexp (Sweep.Grid.parse_band "ra:-1" : No_trade_band.t option Or_error.t)];
+  [%expect {| (Error ("invalid no-trade band" (errors ("risk_aversion not positive")))) |}];
   return ()
 ;;

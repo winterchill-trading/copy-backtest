@@ -45,6 +45,7 @@ let%expect_test "the recorded fixture through three algos" =
     ; modes = [ Equity_ratio ]
     ; max_leverages = [ None ]
     ; max_notionals = [ None ]
+    ; bands = [ None ]
     }
   in
   List.iter (Sweep.run grid ~base source) ~f:(fun r ->
