@@ -20,6 +20,7 @@ end
 module Parent = struct
   type t =
     { coin : string
+    ; decision_px : float
     ; report : Cost_report.t
     }
   [@@deriving sexp_of]
@@ -52,6 +53,8 @@ module Summary = struct
     ; tracking_error_bps : float
     ; mean_gap_bps : float
     ; leader_return : float
+    ; band_skips : int
+    ; band_saved : float
     }
   [@@deriving sexp_of, fields]
 end
@@ -67,6 +70,7 @@ type t =
    coin's paper venue ([globals]). *)
 type exec =
   { order : Plan.Order.t
+  ; decision_px : float
   ; mutable sched : Scheduler.t
   ; local_to_global : int Int.Table.t
   }
@@ -94,6 +98,10 @@ type state =
   ; mutable next_hour : int
   ; mutable next_resync : int
   ; mutable day : Date.t option
+  ; mutable decision : Price.t option
+  (** the leader's fill price while its change is being planned *)
+  ; mutable band_skips : int
+  ; mutable band_saved : float
   }
 
 let usd x = (Usd.of_float [@alert "-lossy"]) x
@@ -168,7 +176,12 @@ and finish t (e : exec) =
   Option.iter
     (Scheduler.report ?end_px:(mark t e.order.symbol) e.sched)
     ~f:(fun report ->
-      Queue.enqueue t.parents { Parent.coin = Symbol.to_string e.order.symbol; report })
+      Queue.enqueue
+        t.parents
+        { Parent.coin = Symbol.to_string e.order.symbol
+        ; decision_px = e.decision_px
+        ; report
+        })
 
 (* Fills and closes from the coin's paper venue, until it is quiet (a close can release
    the final sweep, which may fill at once). *)
@@ -244,6 +257,7 @@ let start_parent t (o : Plan.Order.t) ~now_ns =
     in
     let e =
       { order = o
+      ; decision_px = Price.to_float (Option.value t.decision ~default:reference)
       ; sched = Scheduler.create algo parent
       ; local_to_global = Int.Table.create ()
       }
@@ -254,6 +268,12 @@ let start_parent t (o : Plan.Order.t) ~now_ns =
 ;;
 
 let dispatch t (plan : Plan.t) ~now_ns =
+  List.iter plan.notes ~f:(fun (n : Plan.Note.t) ->
+    match n.reason with
+    | Within_band { saved; _ } ->
+      t.band_skips <- t.band_skips + 1;
+      t.band_saved <- t.band_saved +. Usd.to_float saved
+    | Capped _ | No_mark | No_spec | No_leader_equity -> ());
   List.iter plan.actions ~f:(function
     | Plan.Action.Place o -> start_parent t o ~now_ns
     | Cancel { cloid; _ } ->
@@ -366,6 +386,40 @@ let advance t ~now_ns =
 
 (* {2 Items} *)
 
+let band_uses_impact t =
+  match t.p.follow.band with
+  | Some { slippage = Impact _; _ } -> true
+  | Some { slippage = Fixed_bps _; _ } | None -> false
+;;
+
+(* The slippage a band with [Impact] charges, as the engine computes it: the order that
+   would close the coin's gap now (one lot when there is none), walked on the book. *)
+let estimate_slippage t symbol book =
+  match Map.find t.p.specs symbol with
+  | None -> ()
+  | Some (spec : Rounding.Spec.t) ->
+    let m = t.mirror in
+    let current =
+      List.fold
+        m.pending
+        ~init:(Option.value (Map.find m.follower_positions symbol) ~default:Size.zero)
+        ~f:(fun acc (p : Mirror.Pending.t) ->
+          if Symbol.equal p.symbol symbol && not p.cancel_requested
+          then Size.(acc + p.remaining)
+          else acc)
+    in
+    let gap =
+      match Mirror.target m symbol with
+      | Some target, _ -> Size.(target - current)
+      | None, _ -> Size.zero
+    in
+    let side : Market_data.Side.t = if Size.is_negative gap then Sell else Buy in
+    let size = if Size.is_zero gap then spec.lot else Size.abs gap in
+    Option.iter (Execution_algos.Impact.estimate book ~side ~size) ~f:(fun e ->
+      t.mirror
+      <- Mirror.on_slippage_estimate m ~symbol ~bps:(Float.max 0. e.slippage_bps))
+;;
+
 let on_market t (e : Market_data.Event.t) ~now_ns =
   let symbol = (Market_data.Event.instrument e).symbol in
   let m = market t symbol in
@@ -377,7 +431,10 @@ let on_market t (e : Market_data.Event.t) ~now_ns =
    | Funding _ -> ());
   drain t symbol ~now_ns;
   Option.iter (Market.mark m) ~f:(fun mark ->
-    t.mirror <- Mirror.on_mark t.mirror ~symbol ~mark)
+    t.mirror <- Mirror.on_mark t.mirror ~symbol ~mark);
+  match e with
+  | L2 _ | Bbo _ when band_uses_impact t -> estimate_slippage t symbol (Market.book m)
+  | L2 _ | Bbo _ | Trade _ | Funding _ -> ()
 ;;
 
 let on_leader_fill t (f : Hl_protocol.User_fill.t) =
@@ -426,7 +483,10 @@ let on_leader t (fills : Hl_protocol.User_fill.t list) ~now_ns =
         ~mark
     in
     t.mirror <- mirror;
-    dispatch t plan ~now_ns)
+    (* parents planned on this change measure their timing from the leader's price *)
+    t.decision <- Some last.px;
+    dispatch t plan ~now_ns;
+    t.decision <- None)
 ;;
 
 (* {2 Summary} *)
@@ -513,6 +573,8 @@ let summarize t ~curve =
          List.sum (module Float) curve ~f:(fun p -> p.gap_bps)
          /. Float.of_int (List.length curve))
   ; leader_return
+  ; band_skips = t.band_skips
+  ; band_saved = t.band_saved
   }
 ;;
 
@@ -546,6 +608,9 @@ let run (p : Params.t) (source : Source.t) =
     ; next_hour = ((start / hour_ns) + 1) * hour_ns
     ; next_resync = start + Time_ns.Span.to_int_ns p.resync
     ; day = None
+    ; decision = None
+    ; band_skips = 0
+    ; band_saved = 0.
     }
   in
   t.mirror <- Mirror.on_follower_equity t.mirror (usd p.start_equity);

@@ -17,6 +17,10 @@
     equity samples ([sample]), funding at every UTC hour (position times mark times the
     coin's last hourly rate) and the daily-loss window at every UTC midnight.
 
+    A follow with a no-trade band ([Follower_config.t.band]) plans through it exactly as
+    the engine does; with [Impact] slippage the estimate is set from every replayed book,
+    as the engine sets it from its market ticks.
+
     Fills pay [taker_fee_bps] or [maker_fee_bps]. Orders take [latency] to reach the
     venue. The leader's equity is [leader_equity] plus its realized and unrealized pnl on
     average-entry books of the replayed fills (a position held before the first fill is
@@ -40,6 +44,9 @@ end
 module Parent : sig
   type t =
     { coin : string
+    ; decision_px : float
+    (** the leader's fill price of the change that planned the parent (the mark for a
+        resync's rebalance): the price the follower's timing is measured from *)
     ; report : Execution_algos.Cost_report.t
     }
   [@@deriving sexp_of]
@@ -73,6 +80,10 @@ module Summary : sig
     (** standard deviation of the per-sample return difference, follower minus leader *)
     ; mean_gap_bps : float (** {!Point.t.gap_bps} averaged over the samples *)
     ; leader_return : float
+    ; band_skips : int
+    (** [Within_band] notes in the mirror's plans (a gap the band holds back is counted
+        again at every resync while it lasts) *)
+    ; band_saved : float (** their estimated cost, USD *)
     }
   [@@deriving sexp_of, fields]
 end
