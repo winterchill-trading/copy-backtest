@@ -23,8 +23,8 @@ module Grid : sig
   val parse_caps : string -> float option list Or_error.t
 
   (** One band: [none], [default] ({!No_trade_band.default}), [ra:G] (the default with
-      risk aversion [G]), [impact:G] (and slippage estimated from the book, 5 bp until
-      one is known), [quad:G:ETA] (quadratic costs with impact [ETA]), or a sexp. *)
+      risk aversion [G]), [impact:G] (and slippage estimated from the book, 5 bp until one
+      is known), [quad:G:ETA] (quadratic costs with impact [ETA]), or a sexp. *)
   val parse_band : string -> No_trade_band.t option Or_error.t
 
   (** Comma-separated {!parse_band}s (commas inside a sexp do not split). *)

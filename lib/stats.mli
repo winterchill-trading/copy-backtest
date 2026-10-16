@@ -41,9 +41,9 @@ val returns : Backtest.t -> float array
 val leader_returns : Backtest.t -> float array
 
 (** One row per run (in order), then, with two or more runs, the sweep row. Runs whose
-    curve has fewer than four points (three returns) get no row. [policy] gives single runs
-    a verdict, and in a sweep only the sweep row. [bootstrap_samples] (default 1000) and
-    [seed] (default 0) make the reports reproducible. *)
+    curve has fewer than four points (three returns) get no row. [policy] gives single
+    runs a verdict, and in a sweep only the sweep row. [bootstrap_samples] (default 1000)
+    and [seed] (default 0) make the reports reproducible. *)
 val rows
   :  ?policy:Backtest_stats.Gate.Policy.t
   -> ?bootstrap_samples:int

@@ -92,7 +92,8 @@ let rows ?policy ?(bootstrap_samples = 1000) ?(seed = 0) ~sample runs =
         { Report.Trials.count = List.length indexed
         ; sharpe_variance =
             variance
-              (Array.of_list (List.map indexed ~f:(fun (_, _, rs) -> per_period_sharpe rs)))
+              (Array.of_list
+                 (List.map indexed ~f:(fun (_, _, rs) -> per_period_sharpe rs)))
         }
     else None
   in

@@ -64,9 +64,7 @@ module Grid = struct
               [%message
                 "unknown band (none, default, ra:G, impact:G, quad:G:ETA or a sexp)" s]))
     in
-    let%map () =
-      Option.value_map band ~default:(Ok ()) ~f:No_trade_band.validate
-    in
+    let%map () = Option.value_map band ~default:(Ok ()) ~f:No_trade_band.validate in
     band
   ;;
 

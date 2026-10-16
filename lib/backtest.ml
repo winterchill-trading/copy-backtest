@@ -416,8 +416,7 @@ let estimate_slippage t symbol book =
     let side : Market_data.Side.t = if Size.is_negative gap then Sell else Buy in
     let size = if Size.is_zero gap then spec.lot else Size.abs gap in
     Option.iter (Execution_algos.Impact.estimate book ~side ~size) ~f:(fun e ->
-      t.mirror
-      <- Mirror.on_slippage_estimate m ~symbol ~bps:(Float.max 0. e.slippage_bps))
+      t.mirror <- Mirror.on_slippage_estimate m ~symbol ~bps:(Float.max 0. e.slippage_bps))
 ;;
 
 let on_market t (e : Market_data.Event.t) ~now_ns =
@@ -433,7 +432,7 @@ let on_market t (e : Market_data.Event.t) ~now_ns =
   Option.iter (Market.mark m) ~f:(fun mark ->
     t.mirror <- Mirror.on_mark t.mirror ~symbol ~mark);
   match e with
-  | L2 _ | Bbo _ when band_uses_impact t -> estimate_slippage t symbol (Market.book m)
+  | (L2 _ | Bbo _) when band_uses_impact t -> estimate_slippage t symbol (Market.book m)
   | L2 _ | Bbo _ | Trade _ | Funding _ -> ()
 ;;
 
