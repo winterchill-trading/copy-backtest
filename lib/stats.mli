@@ -1,4 +1,4 @@
-(** Statistics of backtest results from [backtest-stats]: one {!Backtest_stats.Report.t}
+(** Statistics of backtest results from [backtest-stats]: one [Backtest_stats.Report.t]
     per run, and one per sweep for the configuration a sweep would pick.
 
     The return series is the follower's curve: one simple return per sample (the curve's
@@ -30,7 +30,7 @@ module Row : sig
   (** ["accept"], ["reject"] or [None] without a policy. *)
   val verdict : t -> string option
 
-  (** The rejection reasons, one line each ({!Backtest_stats.Gate.Reason.to_string_hum}). *)
+  (** The rejection reasons, one line each ([Backtest_stats.Gate.Reason.to_string_hum]). *)
   val reasons : t -> string list
 end
 
