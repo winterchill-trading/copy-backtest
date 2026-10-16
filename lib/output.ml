@@ -34,6 +34,8 @@ let summary_schema =
       ; float "tracking_error_bps" (fun (_, (s : Summary.t)) -> s.tracking_error_bps)
       ; float "mean_gap_bps" (fun (_, (s : Summary.t)) -> s.mean_gap_bps)
       ; float "leader_return" (fun (_, (s : Summary.t)) -> s.leader_return)
+      ; int32 "band_skips" (fun (_, (s : Summary.t)) -> s.band_skips)
+      ; float "band_saved" (fun (_, (s : Summary.t)) -> s.band_saved)
       ]
 ;;
 
@@ -55,6 +57,7 @@ let parents_schema =
     Parquet.Schema.Column.
       [ int32 "run" fst
       ; dictionary (utf8 "coin" (fun (_, (p : Backtest.Parent.t)) -> p.coin))
+      ; float "decision_px" (fun (_, (p : Backtest.Parent.t)) -> p.decision_px)
       ; dictionary (utf8 "algo" (r (fun x -> x.Cost_report.algo)))
       ; dictionary
           (utf8

@@ -2,7 +2,8 @@
 
     [<dir>/summary.parquet]: one row per run ({!Backtest.Summary.t} plus [run]).
     [<dir>/curve.parquet]: [run], [time], [equity], [leader_equity], [gap_bps].
-    [<dir>/parents.parquet]: one row per finished parent: [run], [coin], [algo], [side],
+    [<dir>/parents.parquet]: one row per finished parent: [run], [coin], [decision_px],
+    [algo], [side],
     [target], [filled], [avg_px], [arrival_px], [end_px], [arrival], [end], [children],
     [maker_filled], [fees], [arrival_slippage_bps], [shortfall], [shortfall_bps],
     [outcome].
