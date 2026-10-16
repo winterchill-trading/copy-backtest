@@ -13,6 +13,7 @@
   hl-protocol
   hl-copy-core
   execution-algos
-  backtest-stats)
+  backtest-stats
+  hl-copy-engine)
  (preprocess
   (pps ppx_jane ppx_yojson_conv)))

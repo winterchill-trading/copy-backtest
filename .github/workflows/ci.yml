@@ -17,8 +17,11 @@ jobs:
             backtest-stats https://github.com/winterchill-trading/backtest-stats.git
             market-data https://github.com/winterchill-trading/market-data.git
             hl-protocol https://github.com/winterchill-trading/hl-protocol.git
+            venue-net https://github.com/winterchill-trading/venue-net.git
+            hl-client https://github.com/winterchill-trading/hl-client.git
             hl-copy-core https://github.com/winterchill-trading/hl-copy-core.git
             execution-algos https://github.com/winterchill-trading/execution-algos.git
+            hl-copy-engine https://github.com/winterchill-trading/hl-copy-engine.git
       # the summary check reads the Parquet files back with the DuckDB CLI
       - name: Install duckdb CLI (test oracle)
         run: |

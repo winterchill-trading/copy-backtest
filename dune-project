@@ -38,4 +38,5 @@
   hl-protocol
   hl-copy-core
   execution-algos
-  backtest-stats))
+  backtest-stats
+  hl-copy-engine))
