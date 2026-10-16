@@ -167,16 +167,26 @@ let%expect_test "known answer" =
       source
   in
   List.iter r.parents ~f:(fun p ->
-    print_s [%sexp (p.report : Execution_algos.Cost_report.t)]);
+    let c = p.report in
+    (* printed rounded: arm64 and amd64 differ in the last digits (fused multiply-adds) *)
+    printf
+      "%s %s target %s filled %s @ %s, arrival %s, fees %.6f, slippage %.6f bps, \
+       shortfall %.6f (%.6f bps), %s\n"
+      c.algo
+      (Sexp.to_string (Market_data.Side.sexp_of_t c.side))
+      (Size.to_string c.target)
+      (Size.to_string c.filled)
+      (Price.to_string c.avg_px)
+      (Price.to_string c.arrival_px)
+      c.fees
+      c.arrival_slippage_bps
+      c.shortfall
+      c.shortfall_bps
+      (Execution_algos.Cost_report.Outcome.to_string c.outcome));
   print r;
   [%expect
     {|
-    ((algo immediate) (side Buy) (target 0.10004) (filled 0.10004)
-     (avg_px 100001) (arrival_px 100000) (end_px 100000)
-     (arrival_ns 1792108801000000000) (end_ns 1792108801000000000) (children 1)
-     (maker_filled 0) (fees 4.5018450180000009)
-     (arrival_slippage_bps 0.10000000000145519) (shortfall 4.6018850180007806)
-     (shortfall_bps 4.60004500000078) (outcome Filled))
+    immediate Buy target 0.10004 filled 0.10004 @ 100001, arrival 100000, fees 4.501845, slippage 0.100000 bps, shortfall 4.601885 (4.600045 bps), filled
     immediate equity: pnl -4.60 (-0.046%), max dd 0.046%, fees 4.50, funding 0.0000, turnover 10004
       parents 1 (filled 1, open 0), children 1, fill 1.0000, shortfall 4.600 bps, slippage 0.100 bps, maker 0.000
       tracking error 0.001 bps, gap 2.7 bps, leader -0.046%
