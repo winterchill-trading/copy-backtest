@@ -131,7 +131,13 @@ let params_flags =
     flag "-sample-s" (optional_with_default 10 int) ~doc:"S curve spacing (10)"
   and taker = flag "-taker-fee-bps" (optional_with_default 4.5 float) ~doc:"BPS (4.5)"
   and maker = flag "-maker-fee-bps" (optional_with_default 1.5 float) ~doc:"BPS (1.5)"
-  and no_funding = flag "-no-funding" no_arg ~doc:" ignore funding" in
+  and no_funding = flag "-no-funding" no_arg ~doc:" ignore funding"
+  and band =
+    flag
+      "-band"
+      (optional string)
+      ~doc:"BAND no-trade band: none, default, ra:G, impact:G, quad:G:ETA or a sexp"
+  in
   fun ~leader ~specs ->
     let open Or_error.Let_syntax in
     let%bind base =
@@ -140,6 +146,11 @@ let params_flags =
         let%map c = Follower_config.of_file_contents (In_channel.read_all path) in
         { c with follower; leader }
       | None -> Ok (Follower_config.create ~follower ~leader ())
+    in
+    let%bind band =
+      match band with
+      | None -> Ok base.band
+      | Some b -> Sweep.Grid.parse_band b
     in
     let%bind mode =
       match mode with
@@ -166,6 +177,7 @@ let params_flags =
       ; caps
       ; slippage_bps = Option.value slippage_bps ~default:base.slippage_bps
       ; algo = Option.value_map algo ~default:base.algo ~f:Copy_algo.of_algo
+      ; band
       }
     in
     let%map () = Follower_config.validate follow in
@@ -236,6 +248,11 @@ let sweep_command =
        flag "-max-leverages" (optional_with_default "none" string) ~doc:"X,.. or none"
      and notionals =
        flag "-max-notionals" (optional_with_default "none" string) ~doc:"USD,.. or none"
+     and bands =
+       flag
+         "-bands"
+         (optional string)
+         ~doc:"B,.. no-trade bands (as -band; default: -band's or none)"
      in
      fun () ->
        let open Deferred.Or_error.Let_syntax in
@@ -247,12 +264,18 @@ let sweep_command =
             let%map algos = Sweep.Grid.parse_algos algos
             and modes = Sweep.Grid.parse_modes modes
             and max_leverages = Sweep.Grid.parse_caps leverages
-            and notionals = Sweep.Grid.parse_caps notionals in
+            and notionals = Sweep.Grid.parse_caps notionals
+            and bands =
+              match bands with
+              | None -> Ok [ base.follow.band ]
+              | Some b -> Sweep.Grid.parse_bands b
+            in
             { Sweep.Grid.algos
             ; modes
             ; max_leverages
             ; max_notionals =
                 List.map notionals ~f:(Option.map ~f:(Usd.of_float [@alert "-lossy"]))
+            ; bands
             })
        in
        Deferred.ok (finish ~out ~no_duckdb (Sweep.run grid ~base source)))
