@@ -92,6 +92,7 @@ type state =
   ; mutable next_tick : int
   ; mutable next_sample : int
   ; mutable next_hour : int
+  ; mutable next_resync : int
   ; mutable day : Date.t option
   }
 
@@ -322,12 +323,29 @@ let new_day t ~now_ns =
     t.mirror <- Mirror.start_day t.mirror
 ;;
 
-(* Runs the grid (ticks, samples, funding hours) up to [now_ns], in time order. *)
+(* The engine's periodic resync: both equities, then a rebalance of every coin, which
+   re-plans what earlier IOCs left unfilled. *)
+let resync t ~now_ns =
+  let marks = marks t in
+  t.mirror <- Mirror.on_leader_equity t.mirror (usd (leader_equity t ~marks));
+  t.mirror <- Mirror.on_follower_equity t.mirror (usd (equity t ~marks));
+  let mirror, plan = Mirror.rebalance t.mirror in
+  t.mirror <- mirror;
+  dispatch t plan ~now_ns
+;;
+
+(* Runs the grid (resyncs, ticks, samples, funding hours) up to [now_ns], in time order. *)
 let advance t ~now_ns =
   let rec loop () =
-    let next = Int.min t.next_tick (Int.min t.next_sample t.next_hour) in
+    let next =
+      Int.min (Int.min t.next_tick t.next_resync) (Int.min t.next_sample t.next_hour)
+    in
     if next <= now_ns
     then (
+      if t.next_resync = next
+      then (
+        resync t ~now_ns:next;
+        t.next_resync <- t.next_resync + Time_ns.Span.to_int_ns t.p.resync);
       if t.next_hour = next
       then (
         if t.p.funding then pay_funding t;
@@ -362,9 +380,8 @@ let on_market t (e : Market_data.Event.t) ~now_ns =
     t.mirror <- Mirror.on_mark t.mirror ~symbol ~mark)
 ;;
 
-let on_leader t (f : Hl_protocol.User_fill.t) ~now_ns =
+let on_leader_fill t (f : Hl_protocol.User_fill.t) =
   let symbol = f.coin in
-  t.leader_changes <- t.leader_changes + 1;
   (* a position held before the history starts opens at the first fill's price *)
   if (not (Map.mem t.leader_books symbol)) && not (Size.is_zero f.start_position)
   then
@@ -386,18 +403,26 @@ let on_leader t (f : Hl_protocol.User_fill.t) ~now_ns =
          ; closed_pnl = Usd.zero
          ; cloid = None
          });
-  t.leader_fees <- t.leader_fees +. Usd.to_float f.fee;
+  t.leader_fees <- t.leader_fees +. Usd.to_float f.fee
+;;
+
+(* One leader position change: the fills of one coin in one millisecond. *)
+let on_leader t (fills : Hl_protocol.User_fill.t list) ~now_ns =
+  List.iter fills ~f:(on_leader_fill t);
+  let last = List.last_exn fills in
+  let symbol = last.coin in
+  t.leader_changes <- t.leader_changes + 1;
   if Map.mem t.p.specs symbol
   then (
     let marks = marks t in
-    let mark = Option.value (Map.find marks symbol) ~default:f.px in
+    let mark = Option.value (Map.find marks symbol) ~default:last.px in
     t.mirror <- Mirror.on_leader_equity t.mirror (usd (leader_equity t ~marks));
     t.mirror <- Mirror.on_follower_equity t.mirror (usd (equity t ~marks));
     let mirror, plan =
       Mirror.on_leader_position_change
         t.mirror
         ~symbol
-        ~size:(Leader_fills.position_after f)
+        ~size:(Leader_fills.position_after last)
         ~mark
     in
     t.mirror <- mirror;
@@ -519,6 +544,7 @@ let run (p : Params.t) (source : Source.t) =
     ; next_tick = start
     ; next_sample = start
     ; next_hour = ((start / hour_ns) + 1) * hour_ns
+    ; next_resync = start + Time_ns.Span.to_int_ns p.resync
     ; day = None
     }
   in
@@ -529,7 +555,7 @@ let run (p : Params.t) (source : Source.t) =
     advance t ~now_ns;
     match item with
     | Market e -> on_market t e ~now_ns
-    | Leader f -> on_leader t f ~now_ns);
+    | Leader fills -> on_leader t fills ~now_ns);
   (* a last sample at the end of the data *)
   Option.iter (Source.span source) ~f:(fun (_, last) -> sample t ~now_ns:last);
   let curve = Queue.to_list t.curve in

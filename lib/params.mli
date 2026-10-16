@@ -12,6 +12,8 @@ type t =
       replayed fills are added as it trades) *)
   ; copy_delay : Time_ns.Span.t (** leader fill on the exchange to the engine seeing it *)
   ; latency : Time_ns.Span.t (** order sent to order live on the venue *)
+  ; resync : Time_ns.Span.t
+  (** the engine's periodic resync: a rebalance that re-plans what IOCs left unfilled *)
   ; tick : Time_ns.Span.t (** market ticks for the algorithms *)
   ; sample : Time_ns.Span.t (** equity curve spacing *)
   ; taker_fee_bps : float
@@ -28,6 +30,7 @@ val create
   -> ?leader_equity:float
   -> ?copy_delay:Time_ns.Span.t
   -> ?latency:Time_ns.Span.t
+  -> ?resync:Time_ns.Span.t
   -> ?tick:Time_ns.Span.t
   -> ?sample:Time_ns.Span.t
   -> ?taker_fee_bps:float

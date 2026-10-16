@@ -7,6 +7,7 @@ type t =
   ; leader_equity : float
   ; copy_delay : Time_ns.Span.t
   ; latency : Time_ns.Span.t
+  ; resync : Time_ns.Span.t
   ; tick : Time_ns.Span.t
   ; sample : Time_ns.Span.t
   ; taker_fee_bps : float
@@ -21,6 +22,7 @@ let create
   ?(leader_equity = 1_000_000.)
   ?(copy_delay = Time_ns.Span.of_int_ms 200)
   ?(latency = Time_ns.Span.of_int_ms 50)
+  ?(resync = Time_ns.Span.of_int_sec 30)
   ?(tick = Time_ns.Span.of_int_ms 500)
   ?(sample = Time_ns.Span.of_int_sec 10)
   ?(taker_fee_bps = 4.5)
@@ -35,6 +37,7 @@ let create
   ; leader_equity
   ; copy_delay
   ; latency
+  ; resync
   ; tick
   ; sample
   ; taker_fee_bps

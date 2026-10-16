@@ -125,6 +125,8 @@ let params_flags =
   and latency_ms =
     flag "-latency-ms" (optional_with_default 50 int) ~doc:"MS order latency"
   and tick_ms = flag "-tick-ms" (optional_with_default 500 int) ~doc:"MS algo ticks (500)"
+  and resync_s =
+    flag "-resync-s" (optional_with_default 30 int) ~doc:"S engine resync period (30)"
   and sample_s =
     flag "-sample-s" (optional_with_default 10 int) ~doc:"S curve spacing (10)"
   and taker = flag "-taker-fee-bps" (optional_with_default 4.5 float) ~doc:"BPS (4.5)"
@@ -171,6 +173,7 @@ let params_flags =
       ~start_equity:equity
       ~leader_equity
       ~latency:(Time_ns.Span.of_int_ms latency_ms)
+      ~resync:(Time_ns.Span.of_int_sec resync_s)
       ~tick:(Time_ns.Span.of_int_ms tick_ms)
       ~sample:(Time_ns.Span.of_int_sec sample_s)
       ~taker_fee_bps:taker
@@ -286,7 +289,11 @@ let slice_command =
      and leader_fills = flag "-leader-fills" (required string) ~doc:"FILE leader fills"
      and coins =
        flag "-coins" (required (Arg_type.comma_separated string)) ~doc:"C,.. coins"
-     and start = flag "-start" (required time_arg) ~doc:"TIME first receive time (ISO 8601 with zone)"
+     and start =
+       flag
+         "-start"
+         (required time_arg)
+         ~doc:"TIME first receive time (ISO 8601 with zone)"
      and stop = flag "-stop" (required time_arg) ~doc:"TIME end (excluded)"
      and lead_in =
        flag
@@ -319,9 +326,15 @@ let slice_command =
        let%bind () = Deferred.ok (Market_data.Event_log.Writer.close w) in
        let%map () =
          Deferred.ok
-           (Writer.save (out ^/ "leader-fills.ndjson") ~contents:(Leader_fills.to_ndjson fills))
+           (Writer.save
+              (out ^/ "leader-fills.ndjson")
+              ~contents:(Leader_fills.to_ndjson fills))
        in
-       printf "%d events, %d leader fills in %s\n" (List.length events) (List.length fills) out)
+       printf
+         "%d events, %d leader fills in %s\n"
+         (List.length events)
+         (List.length fills)
+         out)
 ;;
 
 let () =
