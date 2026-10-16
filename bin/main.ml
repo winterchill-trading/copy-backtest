@@ -420,6 +420,35 @@ let slice_command =
          out)
 ;;
 
+let attribute_command =
+  Command.async_or_error
+    ~summary:"Split a live run's return difference from its backtest into costs"
+    ~readme:(fun () ->
+      "Compares one backtest run (a -out directory) with a follow's hl-copy-engine \
+       journal over the same leader and window: the difference in return, in basis \
+       points of each side's start equity, split into fees, slippage against arrival, \
+       timing (the leader's fill price to the follower's arrival), partial fills (the \
+       move missed by what did not fill), funding, and the residual the costs do not \
+       explain.")
+    (let%map_open.Command backtest =
+       flag "-backtest" (required string) ~doc:"DIR a backtest's -out directory"
+     and run = flag "-run" (optional_with_default 0 int) ~doc:"N run in that directory (0)"
+     and journal =
+       flag
+         "-journal"
+         (required string)
+         ~doc:"FILE the follow's journal directory or one day file"
+     and sexp = flag "-sexp" no_arg ~doc:" print the attribution as a sexp too" in
+     fun () ->
+       let open Deferred.Or_error.Let_syntax in
+       let%bind backtest = Deferred.return (Attribution.backtest_leg ~run backtest) in
+       let%bind entries = Live_journal.load journal in
+       let%map live = Deferred.return (Live_journal.leg entries) in
+       let t = Attribution.compute ~backtest ~live in
+       print_string (Attribution.to_string_hum t);
+       if sexp then print_s [%sexp (t : Attribution.t)])
+;;
+
 let () =
   Command_unix.run
     (Command.group
@@ -428,5 +457,6 @@ let () =
        ; "sweep", sweep_command
        ; "synthetic", synthetic_command
        ; "slice", slice_command
+       ; "attribute", attribute_command
        ])
 ;;
