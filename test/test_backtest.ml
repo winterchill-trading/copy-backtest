@@ -82,24 +82,24 @@ let%expect_test "every algo on the synthetic hour" =
       print (Backtest.run (params ~algo:(Copy_algo.of_algo algo) ()) source));
   [%expect
     {|
-    immediate equity: pnl -625.20 (-6.252%), max dd 6.275%, fees 653.11, funding 0.1376, turnover 1451362
-      parents 119 (filled 119, open 0), children 119, fill 1.0000, shortfall 4.550 bps, slippage 0.050 bps, maker 0.000
-      tracking error 0.009 bps, gap 0.5 bps, leader -6.246%
-    twap:10s:4 equity: pnl -637.58 (-6.376%), max dd 6.399%, fees 652.65, funding 0.1374, turnover 1450338
-      parents 119 (filled 118, open 0), children 471, fill 1.0000, shortfall 4.638 bps, slippage 0.138 bps, maker 0.000
-      tracking error 3.193 bps, gap 1688.3 bps, leader -6.246%
-    pov:0.2:30s equity: pnl -636.92 (-6.369%), max dd 6.393%, fees 652.89, funding 0.1376, turnover 1450859
-      parents 119 (filled 119, open 0), children 174, fill 1.0000, shortfall 4.632 bps, slippage 0.132 bps, maker 0.000
-      tracking error 2.232 bps, gap 490.7 bps, leader -6.246%
-    passive:10s equity: pnl -293.99 (-2.940%), max dd 3.018%, fees 244.03, funding 0.1395, turnover 1473862
-      parents 119 (filled 119, open 0), children 394, fill 1.0000, shortfall 2.247 bps, slippage 0.591 bps, maker 0.948
-      tracking error 3.168 bps, gap 1131.3 bps, leader -6.246%
-    iceberg:0.25:30s equity: pnl -273.63 (-2.736%), max dd 2.843%, fees 215.83, funding 0.1402, turnover 1437264
-      parents 118 (filled 29, open 1), children 2361, fill 0.9799, shortfall 2.146 bps, slippage 0.595 bps, maker 0.999
-      tracking error 3.946 bps, gap 3313.1 bps, leader -6.246%
-    adaptive:20s equity: pnl -625.19 (-6.252%), max dd 6.275%, fees 653.10, funding 0.1376, turnover 1451362
-      parents 119 (filled 119, open 0), children 119, fill 1.0000, shortfall 4.550 bps, slippage 0.050 bps, maker 0.000
-      tracking error 0.009 bps, gap 0.5 bps, leader -6.246%
+    immediate equity: pnl -625.24 (-6.252%), max dd 6.276%, fees 653.13, funding 0.1376, turnover 1451408
+      parents 139 (filled 139, open 0), children 139, fill 1.0000, shortfall 4.550 bps, slippage 0.050 bps, maker 0.000
+      tracking error 0.009 bps, gap 2.9 bps, leader -6.246%
+    twap:10s:4 equity: pnl -640.47 (-6.405%), max dd 6.428%, fees 652.54, funding 0.1374, turnover 1450079
+      parents 149 (filled 128, open 0), children 532, fill 0.9169, shortfall 4.272 bps, slippage 0.153 bps, maker 0.000
+      tracking error 3.221 bps, gap 1689.6 bps, leader -6.246%
+    pov:0.2:30s equity: pnl -636.96 (-6.370%), max dd 6.393%, fees 652.90, funding 0.1376, turnover 1450897
+      parents 139 (filled 139, open 0), children 194, fill 1.0000, shortfall 4.632 bps, slippage 0.132 bps, maker 0.000
+      tracking error 2.231 bps, gap 493.0 bps, leader -6.246%
+    passive:10s equity: pnl -293.97 (-2.940%), max dd 3.018%, fees 244.03, funding 0.1395, turnover 1473860
+      parents 127 (filled 125, open 0), children 426, fill 0.9835, shortfall 2.218 bps, slippage 0.579 bps, maker 0.948
+      tracking error 3.168 bps, gap 1132.4 bps, leader -6.246%
+    iceberg:0.25:30s equity: pnl -277.44 (-2.774%), max dd 2.876%, fees 217.78, funding 0.1402, turnover 1450222
+      parents 142 (filled 27, open 0), children 2569, fill 0.8879, shortfall 1.942 bps, slippage 0.307 bps, maker 0.999
+      tracking error 3.968 bps, gap 3412.7 bps, leader -6.246%
+    adaptive:20s equity: pnl -625.12 (-6.251%), max dd 6.275%, fees 652.99, funding 0.1376, turnover 1451416
+      parents 139 (filled 139, open 0), children 220, fill 1.0000, shortfall 4.549 bps, slippage 0.050 bps, maker 0.000
+      tracking error 0.009 bps, gap 2.9 bps, leader -6.246%
     |}]
 ;;
 
@@ -118,9 +118,9 @@ let%expect_test "caps: leverage and daily loss" =
   print (Backtest.run (params ~caps ()) source);
   [%expect
     {|
-    immediate equity lev<=1 loss<=200: pnl -212.93 (-2.129%), max dd 2.129%, fees 163.86, funding 0.0000, turnover 364127
-      parents 42 (filled 42, open 0), children 42, fill 1.0000, shortfall 4.550 bps, slippage 0.050 bps, maker 0.000
-      tracking error 4.433 bps, gap 0.4 bps, leader -6.246%
+    immediate equity lev<=1 loss<=200: pnl -212.46 (-2.125%), max dd 2.125%, fees 163.87, funding 0.0000, turnover 364150
+      parents 43 (filled 43, open 0), children 43, fill 1.0000, shortfall 4.563 bps, slippage 0.063 bps, maker 0.000
+      tracking error 4.434 bps, gap 28.1 bps, leader -6.246%
     |}]
 ;;
 
@@ -179,6 +179,6 @@ let%expect_test "known answer" =
      (shortfall_bps 4.60004500000078) (outcome Filled))
     immediate equity: pnl -4.60 (-0.046%), max dd 0.046%, fees 4.50, funding 0.0000, turnover 10004
       parents 1 (filled 1, open 0), children 1, fill 1.0000, shortfall 4.600 bps, slippage 0.100 bps, maker 0.000
-      tracking error 0.001 bps, gap 0.5 bps, leader -0.046%
+      tracking error 0.001 bps, gap 2.7 bps, leader -0.046%
     |}]
 ;;
